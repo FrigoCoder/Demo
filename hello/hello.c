@@ -1,7 +1,7 @@
-// asm(".code16gcc\n"
-//     "call  dosmain\n"
-//     "mov   $0x4C,%ah\n"
-//     "int   $0x21\n");
+asm(".code16gcc\n"
+    "call  _dosmain\n"
+    "mov   $0x4C,%ah\n"
+    "int   $0x21\n");
 
 static void print(char *string)
 {
