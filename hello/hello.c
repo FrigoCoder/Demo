@@ -1,8 +1,3 @@
-asm(".code16gcc\n"
-    "call  _dosmain\n"
-    "mov   $0x4C,%ah\n"
-    "int   $0x21\n");
-
 static void print(char *string)
 {
     asm volatile("mov   $0x09, %%ah\n"
@@ -12,8 +7,20 @@ static void print(char *string)
                  : "ah");
 }
 
+int wrong1(void)
+{
+    print("Wrong1!\n$");
+    return 0;
+}
+
 int dosmain(void)
 {
     print("Hello, World!\n$");
+    return 0;
+}
+
+int wrong2(void)
+{
+    print("Wrong2!\n$");
     return 0;
 }
