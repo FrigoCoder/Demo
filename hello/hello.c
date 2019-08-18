@@ -1,62 +1,123 @@
+
+#define WIDTH 640
+#define HEIGHT 480
+
 void print(char *string)
 {
     asm volatile(
         ".intel_syntax\n"
         "mov ah, 0x09\n"
         "int 0x21\n"
-        : /* no output */
+        ".att_syntax\n"
+        :
         : "d"(string)
         : "ah");
 }
 
-void vesa()
+void setVesaMode()
 {
-    int mode = 0x129 | (1 << 14);
     asm volatile(
         ".intel_syntax\n"
         "mov ax, 0x4f02\n"
-        //        "mov bx, _mode\n"
+        "mov bx, 0x4112\n"
         "int 0x10\n"
+        ".att_syntax\n"
         :
-        : "b"(mode)
-        : "ax");
+        :
+        : "ax", "bx");
 }
 
-short current()
+typedef struct
 {
-    short result;
+    // Mandatory information for all VBE revision
+    short modeattributes;   // Mode attributes
+    char winaattributes;    // Window A attributes
+    char winbattributes;    // Window B attributes
+    short wingranularity;   // Window granularity
+    short winsize;          // Window size
+    short winasegment;      // Window A start segment
+    short winbsegment;      // Window B start segment
+    int winfuncptr;         // pointer to window function
+    short bytesperscanline; // Bytes per scan line
+
+    // Mandatory information for VBE 1.2 and above
+    short xresolution;       // Horizontal resolution in pixel or chars
+    short yresolution;       // Vertical resolution in pixel or chars
+    char xcharsize;          // Character cell width in pixel
+    char ycharsize;          // Character cell height in pixel
+    char numberofplanes;     // Number of memory planes
+    char bitsperpixel;       // Bits per pixel
+    char numberofbanks;      // Number of banks
+    char memorymodel;        // Memory model type
+    char banksize;           // Bank size in KB
+    char numberofimagepages; // Number of images
+    char reserved1;          // Reserved for page function
+
+    // Direct Color fields (required for direct/6 and YUV/7 memory models)
+    char redmasksize;         // Size of direct color red mask in bits
+    char redfieldposition;    // Bit position of lsb of red bask
+    char greenmasksize;       // Size of direct color green mask in bits
+    char greenfieldposition;  // Bit position of lsb of green bask
+    char bluemasksize;        // Size of direct color blue mask in bits
+    char bluefieldposition;   // Bit position of lsb of blue bask
+    char rsvdmasksize;        // Size of direct color reserved mask in bits
+    char rsvdfieldposition;   // Bit position of lsb of reserved bask
+    char directcolormodeinfo; // Direct color mode attributes
+
+    // Mandatory information for VBE 2.0 and above
+    int physbaseptr;        // Physical address for flat frame buffer
+    int offscreenmemoffset; // Pointer to start of off screen memory
+    short offscreenmemsize; // Amount of off screen memory in 1Kb units
+    char reserved2[206];    // Remainder of ModeInfoBlock
+} ModeInfo;
+
+void getModeInfo(ModeInfo *output)
+{
     asm volatile(
         ".intel_syntax\n"
-        "mov ax, 0x4f03\n"
+        "mov ax, 0x4f01\n"
+        "mov bx, 0x4112\n"
         "int 0x10\n"
-        : "=b"(result)
+        ".att_syntax\n"
         :
-        : "ax");
-    return result;
+        : "D"(output)
+        : "ax", "bx");
 }
 
-void writechar(char c)
+int getLinearFrameBuffer()
 {
-    asm volatile(
-        ".intel_syntax\n"
-        "mov ah, 0x02\n"
-        "int 0x21\n"
-        : /* no output */
-        : "dl"(c)
-        : "ax");
+    ModeInfo modeInfo;
+    getModeInfo(&modeInfo);
+    return modeInfo.physbaseptr;
 }
 
-void printnumber(int x)
+typedef struct
 {
-    if (x >= 10)
-    {
-        printnumber(x / 10);
-    }
-    writechar('0' + (x % 10));
-}
+    char r;
+    char g;
+    char b;
+} Pixel;
 
 int dosmain(void)
 {
-    printnumber(123456789);
+    print("0$");
+    setVesaMode();
+    print("1$");
+    Pixel *screen = (Pixel *)getLinearFrameBuffer();
+    print("2$");
+    for (int x = 0; x < WIDTH; x++)
+    {
+        print("3$");
+        for (int y = 0; y < HEIGHT; y++)
+        {
+            print("4$");
+            Pixel pixel;
+            pixel.r = x;
+            pixel.g = y;
+            pixel.b = x + y;
+            screen[x + y * WIDTH] = pixel;
+        }
+    }
+    print("5$");
     return 0;
 }
