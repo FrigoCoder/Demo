@@ -1,6 +1,7 @@
 
 #define WIDTH 640
 #define HEIGHT 480
+#define MODE 0x4112
 
 void print(char *string)
 {
@@ -8,7 +9,6 @@ void print(char *string)
         ".intel_syntax\n"
         "mov ah, 0x09\n"
         "int 0x21\n"
-        ".att_syntax\n"
         :
         : "d"(string)
         : "ah");
@@ -19,12 +19,10 @@ void setVesaMode()
     asm volatile(
         ".intel_syntax\n"
         "mov ax, 0x4f02\n"
-        "mov bx, 0x4112\n"
         "int 0x10\n"
-        ".att_syntax\n"
         :
-        :
-        : "ax", "bx");
+        : "b"(MODE)
+        : "ax");
 }
 
 typedef struct
@@ -76,12 +74,10 @@ void getModeInfo(ModeInfo *output)
     asm volatile(
         ".intel_syntax\n"
         "mov ax, 0x4f01\n"
-        "mov bx, 0x4112\n"
         "int 0x10\n"
-        ".att_syntax\n"
         :
-        : "D"(output)
-        : "ax", "bx");
+        : "b"(MODE), "D"(output)
+        : "ax");
 }
 
 int getLinearFrameBuffer()
