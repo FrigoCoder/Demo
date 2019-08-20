@@ -98,7 +98,7 @@ typedef struct
     char b;
 } Pixel;
 
-int main(int argc, char **argv)
+void dosmain()
 {
     //    setVesaMode();
     //    print("1$");
@@ -128,5 +128,4 @@ int main(int argc, char **argv)
     {
         print("Wrong!$");
     }
-    return 0;
 }

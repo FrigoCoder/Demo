@@ -1,4 +1,4 @@
-ENTRY(_main)
+ENTRY(_dosmain)
 SECTIONS {
     . = 0x0100;
     .text : {
