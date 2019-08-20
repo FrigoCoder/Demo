@@ -1,7 +1,11 @@
-
 #define WIDTH 640
 #define HEIGHT 480
 #define MODE 0x4112
+
+void donothing()
+{
+    asm volatile("");
+}
 
 void print(char *string)
 {
@@ -11,7 +15,7 @@ void print(char *string)
         "int 0x21\n"
         :
         : "d"(string)
-        : "ah");
+        : "ax");
 }
 
 void setVesaMode()
@@ -94,26 +98,35 @@ typedef struct
     char b;
 } Pixel;
 
-int dosmain(void)
+int main(int argc, char **argv)
 {
-    print("0$");
-    setVesaMode();
-    print("1$");
-    Pixel *screen = (Pixel *)getLinearFrameBuffer();
-    print("2$");
+    //    setVesaMode();
+    //    print("1$");
+    //    Pixel *screen = (Pixel *)getLinearFrameBuffer();
+    //    print("2$");
+    int i = 0;
     for (int x = 0; x < WIDTH; x++)
     {
-        print("3$");
+        //        print("3$");
         for (int y = 0; y < HEIGHT; y++)
         {
-            print("4$");
-            Pixel pixel;
-            pixel.r = x;
-            pixel.g = y;
-            pixel.b = x + y;
-            screen[x + y * WIDTH] = pixel;
+            donothing();
+            i++;
+            //            print("4$");
+            // Pixel pixel;
+            // pixel.r = x;
+            // pixel.g = y;
+            // pixel.b = x + y;
+            // screen[x + y * WIDTH] = pixel;
         }
     }
-    print("5$");
+    if (i == WIDTH * HEIGHT)
+    {
+        print("Correct!$");
+    }
+    else
+    {
+        print("Wrong!$");
+    }
     return 0;
 }
