@@ -6,13 +6,9 @@ HEIGHT EQU 480
 section .text 
 
 ; switch to vesa
-mov bx, 0x121
-video:
 mov ax, 0x4f02
-int 0x10
-mov bl, 0x12
-cmp ah, bh
-je video
+mov bx, 0x112
+int 10h
 
 ; init screen
 push 0xa000
