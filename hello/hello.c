@@ -13,6 +13,19 @@ void print(char *string)
         : "ax");
 }
 
+char readchar()
+{
+    char result;
+    asm volatile(
+        ".intel_syntax\n"
+        "mov ah, 0x01\n"
+        "int 0x21\n"
+        : "=al"(result)
+        :
+        : "ah");
+    return result;
+}
+
 void setVesaMode()
 {
     asm volatile(
@@ -35,7 +48,7 @@ void setTextMode()
         : "ax");
 }
 
-typedef struct
+struct ModeInfo
 {
     // Mandatory information for all VBE revision
     short modeattributes;   // Mode attributes
@@ -77,24 +90,17 @@ typedef struct
     int offscreenmemoffset; // Pointer to start of off screen memory
     short offscreenmemsize; // Amount of off screen memory in 1Kb units
     char reserved2[206];    // Remainder of ModeInfoBlock
-} ModeInfo;
+} modeInfo;
 
-void getModeInfo(ModeInfo *output)
+void getModeInfo()
 {
     asm volatile(
         ".intel_syntax\n"
         "mov ax, 0x4f01\n"
         "int 0x10\n"
         :
-        : "b"(MODE), "D"(output)
+        : "b"(MODE), "D"(&modeInfo)
         : "ax");
-}
-
-int getLinearFrameBuffer()
-{
-    ModeInfo modeInfo;
-    getModeInfo(&modeInfo);
-    return modeInfo.physbaseptr;
 }
 
 typedef struct
@@ -104,24 +110,35 @@ typedef struct
     char b;
 } Pixel;
 
-void setPixel(void *screen, int x, int y, char r, char g, char b)
+void setPixel(int x, int y, char r, char g, char b)
 {
-    char *lfb = (char *)screen;
-    lfb[(x + y * WIDTH) * 3 + 0] = r;
-    lfb[(x + y * WIDTH) * 3 + 0] = g;
-    lfb[(x + y * WIDTH) * 3 + 0] = b;
+    int address = modeInfo.physbaseptr + (x + y * WIDTH) * 3;
+    asm volatile(
+        ".intel_syntax\n"
+        "mov es:[di], %1\n"
+        "mov es:[di+1], %2\n"
+        "mov es:[di+2], %3\n"
+        :
+        : "D"(address), [r] "r"(r), [g] "r"(g), [b] "r"(b)
+        :);
+}
+
+int whatever(int x, int y)
+{
+    return x + y;
 }
 
 void dosmain()
 {
     setVesaMode();
-    void *screen = (void *)getLinearFrameBuffer();
+    getModeInfo();
     for (int x = 0; x < WIDTH; x++)
     {
         for (int y = 0; y < HEIGHT; y++)
         {
-            setPixel(screen, x, y, x, y, x + y);
+            setPixel(x, y, x, y, x + y);
         }
     }
+    readchar();
     setTextMode();
 }
