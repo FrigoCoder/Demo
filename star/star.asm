@@ -43,19 +43,31 @@ main:
                skip_bank_switch:
 
                ; do the stuff
-               mov al, [x]
-               add al, [t]
+               
+               fild word [t]            ; t
+               fild word [x]            ; x t
+               fadd st0, st1            ; x+t t
+               fistp word [result]      ; t
+               mov ax, [result]
                stosb
 
-               mov al, [y]
-               add al, [t]
+               fild word [y]            ; y t
+               fadd st0, st1            ; y+t t
+               fistp word [result]      ; t
+               mov ax, [result]
                stosb
 
-               mov al, [x]
-               add al, [y]
-               add al, [t]
+               fild word [x]            ; x t
+               fild word [y]            ; y x t
+               fadd st0, st1            ; x+y x t
+               fadd st0, st2            ; x+y+t x t
+               fistp word [result]      ; x t
+               mov ax, [result]
                stosb
                stosb
+
+               fstp st0                 ; t
+               fstp st0                 ;
 
                inc word [x]
                cmp word [x], WIDTH
@@ -84,7 +96,8 @@ section .data
 
 section .bss 
 
-t resw 1
 bank resw 1
+t resw 1
 x resw 1
 y resw 1
+result resw 1
