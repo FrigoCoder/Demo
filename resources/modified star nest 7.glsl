@@ -28,7 +28,7 @@ vec3 color(float s){
 void mainImage( out vec4 fragColor, in vec2 fragCoord )
 {
     // camera
-    vec3 cam=vec3(0.,0.,-1.5);
+    vec3 cam=vec3(0.,0.,-1.0);
     cam+=vec3(4,2,0)*(iTime/60.0-0.5);
     
 	//get coords and direction
