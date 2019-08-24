@@ -17,7 +17,7 @@ push 0xa000
 pop es
 
 ; init time
-mov word [t], 0
+fldz                    ;   t
 
 ; main loop
 main:
@@ -32,25 +32,19 @@ main:
     ; cam.z stays -1.0
     ; cam.y goes [-1;1] based on seconds [0;60] or time [0;3600] assuming 60Hz
     ; cam.x goes [-2;2] based on seconds [0;60] or time [0;3600] assuming 60Hz
-    fild word [t]       ;   t
-    fidiv word [_1800]  ;   t/1800
-    fldz                ;   0           t/1800
-    fld1                ;   1           0           t/1800
-    fsub                ;   -1          t/1800
+    fld st0             ;   t           t
+    fidiv word [_1800]  ;   t/1800      t
+    fldz                ;   0           t/1800      t
+    fld1                ;   1           0           t/1800      t
+    fsub                ;   -1          t/1800      t
     fst dword [cam+16]
-    fadd                ;   t/1800-1
+    fadd                ;   t/1800-1    t
     fst dword [cam+8]
-    fadd st0            ;   t/900-2
-    fstp dword [cam]    ;   -
+    fadd st0            ;   t/900-2     t
+    fstp dword [cam]    ;   t
 
     mov word [y], HEIGHT
     loopy:
-
-        ; get uv coordinate and direction for y
-        fild word [y]           ;   y
-        fidiv word [height]     ;   y/height
-
-
 
         mov word [x], WIDTH
         loopx:
@@ -83,8 +77,6 @@ main:
 
 
             ; do the stuff
-
-            fild word [t]            ; t
             fild word [x]            ; x t
             fadd st0, st1            ; x+t t
             fistp word [result]      ; t
@@ -105,9 +97,7 @@ main:
             mov ax, [result]
             stosb
             stosb
-
             fstp st0                 ; t
-            fstp st0                 ;
 
             dec word [x]
             jnz loopx
@@ -116,7 +106,8 @@ main:
         jnz loopy
 
     ; increase time
-    inc word [t]
+    fld1                            ;   1   t
+    faddp                           ;   t+1
 
     ; check keyboard
     in al, 0x60
