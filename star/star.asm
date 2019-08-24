@@ -23,7 +23,7 @@ mov word [t], 0
 main:
 
     ; init bank
-    mov word [bank], 0
+    xor dx, dx
 
     ; init pixel
     xor di, di
@@ -60,9 +60,8 @@ main:
             jnz skip_bank_switch
             mov ax, 0x4f05
             xor bx, bx
-            mov dx, [bank]
             int 10h
-            inc word [bank]
+            inc dx
             skip_bank_switch:
 
             ; get uv coordinates and direction
@@ -134,6 +133,9 @@ ret
 ;   x   |y  |z
 kaliset:
 
+    fldz    ;   0   x   y   z
+    fldz    ;   0   0   x   y   z
+
     mov cx, ITERATIONS
 
     kaliteration:       ;   x           y   z
@@ -172,7 +174,6 @@ _1800 dw 1800
 
 section .bss 
 
-bank resw 1
 t resw 1
 x resw 1
 y resw 1
