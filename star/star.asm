@@ -43,11 +43,29 @@ main:
     fadd st0            ;   t/900-2     t
     fstp dword [cam]    ;   t
 
+    ; get uv coordinates and direction for z
+    fld1                ;   1   t
+    fstp dword [dir+16] ;   t
+
     mov word [y], HEIGHT
     loopy:
 
+        ; get uv coordinates and direction for y
+        fild word [y]           ;   y               t
+        fidiv word [height]     ;   y/H             t
+        fsub dword [_0_5]       ;   y/H-0.5         t
+        fimul word [height]     ;   (y/H-0.5)*H     t
+        fidiv word [width]      ;   (y/H-0.5)*H/W   t
+        fstp dword [dir+8]      ;   t
+
         mov word [x], WIDTH
         loopx:
+
+            ; get uv coordinates and direction for x
+            fild word [x]       ;   x               t
+            fidiv word [width]  ;   x/W             t
+            fsub dword [_0_5]   ;   x/W-0.5         t
+            fstp dword [dir]    ;   t
 
             ; switch screenbank if needed
             test di, di
@@ -57,23 +75,6 @@ main:
             int 10h
             inc dx
             skip_bank_switch:
-
-            ; get uv coordinates and direction
-            fild word [x]
-            fidiv word [width]
-
-            fstp dword [dir]
-
-            fild word [y]
-            fidiv word [height]
-            fstp dword [dir+8]
-
-            fld1
-            fstp dword [dir+16]
-
-            ; calculate shift
-            
-
 
 
             ; do the stuff
@@ -161,6 +162,7 @@ section .data
 width dw WIDTH
 height dw HEIGHT
 
+_0_5  dq 0.5
 _1800 dw 1800
 
 section .bss 
