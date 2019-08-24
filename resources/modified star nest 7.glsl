@@ -21,25 +21,28 @@ float kaliset(vec3 p){
     return a*a*a; // add contrast
 }
 
+vec3 color(float s){
+    return vec3(s,s*s,s*s*s*s)*pow(distfading, (s/step)-1.);
+}
+
 void mainImage( out vec4 fragColor, in vec2 fragCoord )
 {
+    // camera
+    vec3 cam=vec3(0.,0.,-1.5);
+    cam+=vec3(4,2,0)*(iTime/60.0-0.5);
+    
 	//get coords and direction
 	vec2 uv=fragCoord.xy/iResolution.xy-.5;
 	uv.y*=iResolution.y/iResolution.x;
 	vec3 dir=vec3(uv,1.0);
 
-	//mouse rotation
-	vec3 from=vec3(0.,0.,-1.5);
-	from+=vec3(4,2,0)*(iTime/60.0-0.5);
-	
+
 	//volumetric rendering
-	float fade=1.;
 	vec3 v=vec3(0.);
     for( float s=smin; s<=smax; s+=step){
-		vec3 p=from+s*dir;
+		vec3 p=cam+s*dir;
         float a=kaliset(p);
-		v+=vec3(s,s*s,s*s*s*s)*a*fade; // coloring based on distance
-		fade*=distfading; // distance fading
+        v+=color(s)*a;
 	}
 	fragColor = vec4(v*.0001,1.);	
 }
