@@ -42,6 +42,20 @@ main:
                     inc word [bank]
                skip_bank_switch:
 
+               ; get uv coordinates and direction
+               fild word [x]
+               fidiv word [width]
+               fstp dword [dir]
+
+               fild word [y]
+               fidiv word [height]
+               fstp dword [dir+8]
+
+               fld1
+               fstp dword [dir+16]
+
+
+
                ; do the stuff
                
                fild word [t]            ; t
@@ -94,6 +108,9 @@ ret
 
 section .data 
 
+width dw WIDTH
+height dw HEIGHT
+
 section .bss 
 
 bank resw 1
@@ -101,3 +118,7 @@ t resw 1
 x resw 1
 y resw 1
 result resw 1
+
+dir resb 3*8
+from resb 3*8
+fade resb 1*8
