@@ -51,21 +51,21 @@ main:
     loopy:
 
         ; get uv coordinates and direction for y
-        fild word [y]           ;   y               t
-        fidiv word [height]     ;   y/H             t
-        fsub dword [_0_5]       ;   y/H-0.5         t
-        fimul word [height]     ;   (y/H-0.5)*H     t
-        fidiv word [width]      ;   (y/H-0.5)*H/W   t
-        fstp dword [dir+8]      ;   t
+        fild word [y]           ;   y
+        fidiv word [height]     ;   y/H
+        fsub dword [_0_5]       ;   y/H-0.5
+        fimul word [height]     ;   (y/H-0.5)*H
+        fidiv word [width]      ;   (y/H-0.5)*H/W
+        fstp dword [dir+8]      ;   -
 
         mov word [x], WIDTH
         loopx:
 
             ; get uv coordinates and direction for x
-            fild word [x]       ;   x               t
-            fidiv word [width]  ;   x/W             t
-            fsub dword [_0_5]   ;   x/W-0.5         t
-            fstp dword [dir]    ;   t
+            fild word [x]       ;   x
+            fidiv word [width]  ;   x/W
+            fsub dword [_0_5]   ;   x/W-0.5
+            fstp dword [dir]    ;   -
 
             ; switch screenbank if needed
             test di, di
@@ -75,7 +75,6 @@ main:
             int 10h
             inc dx
             skip_bank_switch:
-
 
             ; do the stuff
             fild word [t]
@@ -100,7 +99,7 @@ main:
             stosb
             stosb
             fstp st0                 ; t
-            fstp st0
+            fstp st0                 ; -
 
             dec word [x]
             jnz loopx
