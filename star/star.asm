@@ -77,51 +77,87 @@ main:
 
             ; volumetric rendering
 
+            ; initialize v and s
+            fldz                ;   0
+            fst qword [v.x]     ;   0
+            fst qword [v.y]     ;   0
+            fst qword [v.z]     ;   0
+            fstp qword [s]      ;   -
 
+            loops:
 
-            ; ; initialize v and s
-            ; fldz                ;   0
-            ; fst qword [v]       ;   0
-            ; fst qword [v+8]     ;   0
-            ; fst qword [v+16]    ;   0
-            ; fstp qword [s]      ;   -
+                ; p = cam+dir*s
+                
+                fld qword [s]       ;   s
 
-            ; loops:
+                fld qword [dir.x]   ;   d.x         s
+                fmul st0, st1       ;   d.x*s       s
+                fadd qword [cam.x]  ;   c.x+d.x*s   s
+                fstp qword [p.x]    ;   s
 
-            ;     ; p = cam+dir*s
-            ;     fld qword [cam+16]  ;   c.z
-            ;     fld qword [cam+8]   ;   c.y         c.z
-            ;     fld qword [cam]     ;   c.x         c.y         c.z
-            ;     fld qword [dir+16]  ;   d.z         c.x         c.y         c.z
-            ;     fld qword [dir+8]   ;   d.y         d.z         c.x         c.y c.z
-            ;     fld qword [dir]     ;   d.x         d.y         d.z         c.x c.y c.z
-            ;     fld qword [s]       ;   s           d.x         d.y         d.z c.x c.y c.z
-            ;     fmul st1, st0       ;   s           d.x*s       d.y         d.z c.x c.y c.z
-            ;     fmul st2, st0       ;   s           d.x*s       d.y*s       d.z c.x c.y c.z
-            ;     fmulp st3, st0      ;   d.x*s       d.y*s       d.z*s       c.x c.y c.z
-            ;     faddp st3, st0      ;   d.y*s       d.z*s       c.x+d.x*s   c.y c.z
-            ;     faddp st3, st0      ;   d.z*s       c.x+d.x*s   c.y+d.y*s   c.z
-            ;     faddp st3, st0      ;   c.x+d.x*s   c.y+d.y*s   c.z+d.z*s
+                fld qword [dir.y]   ;   d.y         s
+                fmul st0, st1       ;   d.y*s       s
+                fadd qword [cam.y]  ;   c.y+d.y*s   s
+                fstp qword [p.y]    ;   s
 
-            ;     ; kaliset(p)        ;   p.x         p.y         p.z
+                fld qword [dir.z]   ;   d.z         s
+                fmul st0, st1       ;   d.z*s       s
+                fadd qword [cam.z]  ;   c.z+d.z*s   s
+                fstp qword [p.z]    ;   s
+                fstp st0            ;   -
 
-            ;     ; a=0
-            ;     fldz                ;   0           p.x         p.y         p.z
-            ;     fstp qword [a]      ;   p.x         p.y         p.z
+                ; kaliset(p)
 
-            ;     mov cx, ITERATIONS
+                fldz                ;   0
+                fstp qword [a]      ;   -
 
-            ;     kaliteration:
+                mov cx, ITERATIONS
 
-            ;         ; len=length(p)     ;   dot(p)      p.x         p.y         p.z
-            ;         call dot
-            ;         fsqrt               ;   len(p)      p.x         p.y         p.z
-            ;         fstp st0
+                call dotpp                      ;   dot(p)
 
-            ;         dec cx
-            ;         jnz kaliteration
+                kaliteration:
 
-            ;     ; TODO CHECK S AND LOOP
+                    fld qword [p.x]             ;   p.x                 dot(p)
+                    fabs                        ;   |p.x|               dot(p)
+                    fdiv st0, st1               ;   |p.x|/dot(p)        dot(p)
+                    fsub qword [formuparam]     ;   [p.x|/dot(p)-u      dot(p)
+                    fstp qword [p.x]            ;   dot(p)
+
+                    fld qword [p.y]             ;   p.y                 dot(p)
+                    fabs                        ;   |p.y|               dot(p)
+                    fdiv st0, st1               ;   |p.y|/dot(p)        dot(p)
+                    fsub qword [formuparam]     ;   [p.y|/dot(p)-u      dot(p)
+                    fstp qword [p.y]            ;   dot(p)
+
+                    fld qword [p.z]             ;   p.y                 dot(p)
+                    fabs                        ;   |p.y|               dot(p)
+                    fdiv st0, st1               ;   |p.y|/dot(p)        dot(p)
+                    fsub qword [formuparam]     ;   [p.y|/dot(p)-u      dot(p)
+                    fstp qword [p.z]            ;   dot(p)
+
+                    call dotpp                  ;   dot(p')             dot(p)
+                    fsub st1, st0               ;   dot(p')             dot(p)-dot(p')
+                    fxch st0, st1               ;   dot(p)-dot(p')      dot(p')
+                    fabs                        ;   |dot(p)-dot(p')|    dot(p')
+                    fadd qword [a]              ;   a+|dot(p)-dot(p')|  dot(p')
+                    fstp qword [a]              ;   dot(p')
+
+                    dec cx
+                    jnz kaliteration
+
+                fstp st0                        ;   -
+                fld qword [s]                   ;   s
+                fld1                            ;   1   s
+                fadd                            ;   s+1
+                fst qword [s]                   ;   s+1
+                fld qword [_4]                  ;   4   s+1
+                fcomp st1                       ;   s+1
+                fstsw ax                        ;
+                fstp st0                        ;
+                sahf                            ;
+                ja loops
+
+                
 
             dec word [x]
             jnz loopx
@@ -143,28 +179,28 @@ int 0x10
 
 ; exit
 ret
-            
-dot:            ;   x           y   z
-    fld st0     ;   x           x   y   z
-    fmul st0    ;   x*x         x   y   z
-    fld st2     ;   y           x*x x   y   z
-    fmul st0    ;   y*y         x*x x   y   z
-    fld st4     ;   z           y*y x*x x   y   z
-    fmul st0    ;   z*z         y*y x*x x   y   z
-    faddp st1   ;   y*y+z*z     x*x x   y   z
-    faddp st1   ;   x*x+y*y+z*z x   y   z
-    ret
 
+dotpp:
+    fld qword [p.x]     ;   x
+    fmul st0, st0       ;   x*x
+    fld qword [p.y]     ;   y           x*x
+    fmul st0, st0       ;   y*y         x*x
+    fld qword [p.z]     ;   z           y*y     x*x
+    fmul st0, st0       ;   z*z         y*y     x*x
+    fadd                ;   y*y+z*z     x*x
+    fadd                ;   x*x+y*y+z*z
+    ret
 
 section .data 
 
 width dw WIDTH
 height dw HEIGHT
 ratio dq 1.3333333333333333333333333333333
+formuparam dq 0.53
 
 _0_5  dq 0.5
+_4    dq 4.0
 _1800 dw 1800
-
 
 section .bss 
 
@@ -183,6 +219,10 @@ dir.z resq 1
 v.x resq 1
 v.y resq 1
 v.z resq 1
+
+p.x resq 1
+p.y resq 1
+p.z resq 1
 
 s resq 1
 a resq 1
