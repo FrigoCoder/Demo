@@ -5,18 +5,18 @@
 #define iterations 15
 #define formuparam 0.53
 
-#define smin 0.1
+#define smin 0.0
 #define smax 4.0
 #define step 0.1
 
 #define distfading 0.730
 
 float kaliset(vec3 p){
-    float pa,a=pa=0.;
+    float a=0.;
     for (int i=0; i<iterations; i++) {
-        p=abs(p)/dot(p,p)-formuparam; // the magic formula
-        a+=abs(length(p)-pa); // absolute sum of average change
-        pa=length(p);
+	    float len=length(p);
+        p=abs(p)/(len*len)-formuparam; // the magic formula
+        a+=abs(length(p)-len); // absolute sum of average change
     }
     return a*a*a; // add contrast
 }
