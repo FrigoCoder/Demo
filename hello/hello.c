@@ -39,7 +39,7 @@ void setTextMode()
         : "ax");
 }
 
-short bank = 0;
+int currentBank = 0;
 
 void setBank()
 {
@@ -47,27 +47,26 @@ void setBank()
         ".intel_syntax\n"
         "mov ax, 0x4f05\n"
         "xor bx, bx\n"
-        "mov dx, [_bank]\n"
         "int 0x10\n"
         :
-        :
-        : "ax", "bx", "dx");
+        : "d"(currentBank)
+        : "ax", "bx");
 }
-
-char *screen = (char *)0xa0000;
 
 void setPixel(int x, int y, char r, char g, char b)
 {
     int address = (x + y * WIDTH) * 4;
-    if (bank != address >> 16)
+    int bank = address >> 16;
+    if (currentBank != bank)
     {
-        bank = address >> 16;
+        currentBank = bank;
         setBank();
     }
-    address &= 0xffff;
-    screen[address++] = r;
-    screen[address++] = g;
-    screen[address++] = b;
+    int offset = address & 0xffff;
+    char *screen = (char *)0xa0000;
+    screen[offset + 0] = r;
+    screen[offset + 1] = g;
+    screen[offset + 2] = b;
 }
 
 typedef struct
@@ -162,20 +161,14 @@ vec3 volumetric(vec3 camera, vec3 direction)
 void dosmain()
 {
     setVesaMode();
-    setBank();
+
     for (int t = 0; !escpressed(); t++)
     {
-        vec3 cam = camera(t + 0.0);
         for (int y = 0; y < HEIGHT; y++)
         {
             for (int x = 0; x < WIDTH; x++)
             {
-                vec3 dir = direction(x, y);
-                vec3 rgb = volumetric(cam, dir);
-                rgb.x *= 0.0001;
-                rgb.y *= 0.0001;
-                rgb.z *= 0.0001;
-                setPixel(x, y, rgb.x, rgb.y, rgb.z);
+                setPixel(x, y, x + t, y + t, x + y + t);
             }
         }
     }
