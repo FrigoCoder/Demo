@@ -2,6 +2,24 @@
 #define WIDTH 640
 #define HEIGHT 480
 
+double abs(double x)
+{
+    return x >= 0.0 ? x : -x;
+}
+
+double sqrt(double x)
+{
+    return 1.0;
+    // double result;
+    // asm volatile(
+    //     ".intel_syntax\n"
+    //     "fsqrt\n"
+    //     : "=t"(result)
+    //     : "0"(x)
+    //     :);
+    // return result;
+}
+
 int escpressed()
 {
     char c;
@@ -176,31 +194,18 @@ char clamp(double x)
     return min(max(x, 0), 255);
 }
 
-double abs(double x)
-{
-    return x >= 0.0 ? x : -x;
-}
-
-double sqrt(double x)
-{
-    return 1.0;
-    // double result;
-    // asm volatile(
-    //     ".intel_syntax\n"
-    //     "fsqrt\n"
-    //     : "=t"(result)
-    //     : "0"(x)
-    //     :);
-    // return result;
-}
-
 void dosmain()
 {
     screen = (char *)0xa0000 - getds() * 16;
     setVesaMode();
     for (int t = 0; !escpressed(); t++)
     {
-        // vec3 cam = camera(t);
+        // calculate camera
+        vec3 cam;
+        cam.x = 0 + 4 * (t / 60.0 - 0.5);
+        cam.y = 0 + 2 * (t / 60.0 - 0.5);
+        cam.z = -1.0;
+
         for (int y = 0; y < HEIGHT; y++)
         {
             for (int x = 0; x < WIDTH; x++)
