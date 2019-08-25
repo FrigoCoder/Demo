@@ -53,6 +53,18 @@ void setBank()
         : "ax", "bx");
 }
 
+short getds()
+{
+    short result;
+    asm volatile(
+        ".intel_syntax\n"
+        "mov ax, ds\n"
+        : "=a"(result)::);
+    return result;
+}
+
+char *screen;
+
 void setPixel(int x, int y, char r, char g, char b)
 {
     int address = (x + y * WIDTH) * 4;
@@ -63,7 +75,6 @@ void setPixel(int x, int y, char r, char g, char b)
         setBank();
     }
     int offset = address & 0xffff;
-    char *screen = (char *)0xa0000;
     screen[offset + 0] = r;
     screen[offset + 1] = g;
     screen[offset + 2] = b;
@@ -160,8 +171,8 @@ vec3 volumetric(vec3 camera, vec3 direction)
 
 void dosmain()
 {
+    screen = (char *)0xa0000 - getds() * 16;
     setVesaMode();
-
     for (int t = 0; !escpressed(); t++)
     {
         for (int y = 0; y < HEIGHT; y++)
