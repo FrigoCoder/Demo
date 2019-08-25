@@ -32,20 +32,20 @@ main:
     ; cam.z stays -1.0
     ; cam.y goes [-1;1] based on seconds [0;60] or time [0;3600] assuming 60Hz
     ; cam.x goes [-2;2] based on seconds [0;60] or time [0;3600] assuming 60Hz
-    fild word [t]       ;   t
-    fidiv word [_1800]  ;   t/1800
-    fldz                ;   0           t/1800
-    fld1                ;   1           0           t/1800
-    fsub                ;   -1          t/1800
-    fst dword [cam+16]
-    fadd                ;   t/1800-1
-    fst dword [cam+8]
-    fadd st0            ;   t/900-2
-    fstp dword [cam]    ;   -
+    fild word [t]               ;   t
+    fidiv word [_1800]          ;   t/1800
+    fldz                        ;   0           t/1800
+    fld1                        ;   1           0           t/1800
+    fsub                        ;   -1          t/1800
+    fst qword [cam+16]          ;   -1          t/1800
+    fadd                        ;   t/1800-1
+    fst qword [cam+8]           ;   t/1800-1
+    fadd st0                    ;   t/900-2
+    fstp qword [cam]            ;   -
 
     ; get uv coordinates and direction for z
-    fld1                ;   1
-    fstp dword [dir+16] ;   -
+    fld1                        ;   1
+    fstp qword [dir+16]         ;   -
 
     mov word [y], HEIGHT
     loopy:
@@ -53,10 +53,10 @@ main:
         ; get uv coordinates and direction for y
         fild word [y]           ;   y
         fidiv word [height]     ;   y/H
-        fsub dword [_0_5]       ;   y/H-0.5
+        fsub qword [_0_5]       ;   y/H-0.5
         fimul word [height]     ;   (y/H-0.5)*H
         fidiv word [width]      ;   (y/H-0.5)*H/W
-        fstp dword [dir+8]      ;   -
+        fstp qword [dir+8]      ;   -
 
         mov word [x], WIDTH
         loopx:
@@ -64,8 +64,8 @@ main:
             ; get uv coordinates and direction for x
             fild word [x]       ;   x
             fidiv word [width]  ;   x/W
-            fsub dword [_0_5]   ;   x/W-0.5
-            fstp dword [dir]    ;   -
+            fsub qword [_0_5]   ;   x/W-0.5
+            fstp qword [dir]    ;   -
 
             ; switch screenbank if needed
             test di, di
@@ -76,30 +76,34 @@ main:
             inc dx
             skip_bank_switch:
 
-            ; do the stuff
-            fild word [t]
-            fild word [x]            ; x t
-            fadd st0, st1            ; x+t t
-            fistp word [result]      ; t
-            mov ax, [result]
-            stosb
+            ; volumetric rendering
 
-            fild word [y]            ; y t
-            fadd st0, st1            ; y+t t
-            fistp word [result]      ; t
-            mov ax, [result]
-            stosb
+            ; initialize v and s
+            fldz                ;   0
+            fst qword [v]       ;   0
+            fst qword [v+8]     ;   0
+            fst qword [v+16]    ;   0
+            fstp qword [s]      ;   -
 
-            fild word [x]            ; x t
-            fild word [y]            ; y x t
-            fadd st0, st1            ; x+y x t
-            fadd st0, st2            ; x+y+t x t
-            fistp word [result]      ; x t
-            mov ax, [result]
-            stosb
-            stosb
-            fstp st0                 ; t
-            fstp st0                 ; -
+            loops:
+
+                ; p = cam+dir*s
+                fld qword [cam+16]  ;   c.z
+                fld qword [cam+8]   ;   c.y         c.z
+                fld qword [cam]     ;   c.x         c.y         c.z
+                fld qword [dir+16]  ;   d.z         c.x         c.y         c.z
+                fld qword [dir+8]   ;   d.y         d.z         c.x         c.y c.z
+                fld qword [dir]     ;   d.x         d.y         d.z         c.x c.y c.z
+                fld qword [s]       ;   s           d.x         d.y         d.z c.x c.y c.z
+                fmul st1, st0       ;   s           d.x*s       d.y         d.z c.x c.y c.z
+                fmul st2, st0       ;   s           d.x*s       d.y*s       d.z c.x c.y c.z
+                fmulp st3, st0      ;   d.x*s       d.y*s       d.z*s       c.x c.y c.z
+                faddp st3, st0      ;   d.y*s       d.z*s       c.x+d.x*s   c.y c.z
+                faddp st3, st0      ;   d.z*s       c.x+d.x*s   c.y+d.y*s   c.z
+                faddp st3, st0      ;   c.x+d.x*s   c.y+d.y*s   c.z+d.z*s
+
+
+
 
             dec word [x]
             jnz loopx
@@ -155,7 +159,7 @@ dot:            ;   x           y   z
     fmul st0    ;   z*z         y*y x*x x   y   z
     faddp st1   ;   y*y+z*z     x*x x   y   z
     faddp st1   ;   x*x+y*y+z*z x   y   z
-    ret;
+    ret
 
 section .data 
 
@@ -165,16 +169,19 @@ height dw HEIGHT
 _0_5  dq 0.5
 _1800 dw 1800
 
+
 section .bss 
 
 t resw 1
 x resw 1
 y resw 1
-result resw 1
-
-a resb 8
-pa resb 8
 
 cam resb 3*8
 dir resb 3*8
 fade resb 1*8
+
+v resb 3*8
+s resb 8
+
+a resb 8
+pa resb 8
