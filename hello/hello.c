@@ -9,15 +9,24 @@ double abs(double x)
 
 double sqrt(double x)
 {
-    return 1.0;
-    // double result;
-    // asm volatile(
-    //     ".intel_syntax\n"
-    //     "fsqrt\n"
-    //     : "=t"(result)
-    //     : "0"(x)
-    //     :);
-    // return result;
+    double result;
+    asm volatile(
+        ".intel_syntax\n"
+        "fsqrt\n"
+        : "=t"(result)
+        : "0"(x)
+        :);
+    return result;
+}
+
+int max(int x, int y)
+{
+    return x > y ? x : y;
+}
+
+int min(int x, int y)
+{
+    return x < y ? x : y;
 }
 
 int escpressed()
@@ -114,78 +123,9 @@ typedef struct
 
 #define distfading 0.730
 
-vec3 camera(double seconds)
-{
-    double time = seconds / 60.0 - 0.5;
-    vec3 result;
-    result.x = 0 + 4 * time;
-    result.y = 0 + 2 * time;
-    result.z = -1.0;
-    return result;
-}
-
-vec3 direction(int x, int y)
-{
-    vec3 result;
-    result.x = ((double)x) / WIDTH - 0.5;
-    result.y = (((double)y) / HEIGHT - 0.5) * HEIGHT / WIDTH;
-    result.z = 1.0;
-    return result;
-}
-
 double length(vec3 v)
 {
     return sqrt(v.x * v.x + v.y * v.y + v.z * v.z);
-}
-
-double kaliset(vec3 p)
-{
-    double a = 0;
-    double len = length(p);
-    for (int i = 0; i < iterations; i++)
-    {
-        double dot = len * len;
-        p.x = abs(p.x) / dot - formuparam;
-        p.y = abs(p.y) / dot - formuparam;
-        p.z = abs(p.z) / dot - formuparam;
-        double newlen = length(p);
-        a += abs(newlen - len);
-        len = newlen;
-    }
-    return a * a * a;
-}
-
-vec3 volumetric(vec3 camera, vec3 direction)
-{
-    vec3 v;
-    v.x = 0;
-    v.y = 0;
-    v.z = 0;
-    double fade = 1.0;
-    for (double s = smin; s <= smax; s += step)
-    {
-        vec3 p;
-        p.x = camera.x + direction.x * s;
-        p.y = camera.y + direction.y * s;
-        p.z = camera.z + direction.z * s;
-
-        double a = kaliset(p);
-        v.x += s * a * fade;
-        v.y += s * s * a * fade;
-        v.z += s * s * s * s * a * fade;
-        fade *= distfading;
-    }
-    return v;
-}
-
-int max(int x, int y)
-{
-    return x > y ? x : y;
-}
-
-int min(int x, int y)
-{
-    return x < y ? x : y;
 }
 
 char clamp(double x)
@@ -210,11 +150,52 @@ void dosmain()
         {
             for (int x = 0; x < WIDTH; x++)
             {
-                setPixel(x, y, x + t, y + t, x + y + t);
-                // vec3 dir = direction(x, y);
-                // vec3 v = volumetric(cam, dir);
-                // double scale = 0.0001;
-                // setPixel(x, y, clamp(v.x * scale), clamp(v.y * scale), clamp(v.z * scale));
+                // calculate direction
+                vec3 dir;
+                dir.x = ((double)x) / WIDTH - 0.5;
+                dir.y = (((double)y) / HEIGHT - 0.5) * HEIGHT / WIDTH;
+                dir.z = 1.0;
+
+                // volumetric rendering
+                vec3 v;
+                v.x = 0;
+                v.y = 0;
+                v.z = 0;
+                double fade = 1.0;
+                for (double s = smin; s <= smax; s += step)
+                {
+                    // get point
+                    vec3 p;
+                    p.x = cam.x + dir.x * s;
+                    p.y = cam.y + dir.y * s;
+                    p.z = cam.z + dir.z * s;
+
+                    // kaliset
+                    double len = length(p);
+                    double a = len;
+                    for (int i = 0; i < iterations; i++)
+                    {
+                        double dot = len * len;
+                        p.x = abs(p.x) / dot - formuparam;
+                        p.y = abs(p.y) / dot - formuparam;
+                        p.z = abs(p.z) / dot - formuparam;
+                        double newlen = length(p);
+                        //                        a += abs(newlen - len);
+                        a += newlen * newlen;
+                        len = newlen;
+                    }
+                    a *= a * a;
+
+                    // coloring
+                    v.x += s * a * fade;
+                    v.y += s * s * a * fade;
+                    v.z += s * s * s * s * a * fade;
+                    fade *= distfading;
+                }
+
+                double scale = 0.001;
+                setPixel(x, y, clamp(v.x * scale), clamp(v.y * scale), clamp(v.z * scale));
+                // setPixel(x, y, x + t, y + t, x + y + t);
             }
         }
     }
