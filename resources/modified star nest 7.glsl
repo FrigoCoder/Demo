@@ -9,8 +9,6 @@
 #define smax 4.0
 #define step 0.1
 
-#define distfading 0.730
-
 float kaliset(vec3 p){
     float a=0.;
     for (int i=0; i<iterations; i++) {
@@ -19,10 +17,6 @@ float kaliset(vec3 p){
         a+=abs(length(p)-len); // absolute sum of average change
     }
     return a*a*a; // add contrast
-}
-
-vec3 color(float s){
-    return vec3(s,s*s,s*s*s*s)*pow(distfading, (s/step)-1.);
 }
 
 void mainImage( out vec4 fragColor, in vec2 fragCoord )
@@ -39,10 +33,12 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
 	// volumetric rendering
     vec3 p=cam;
     vec3 v=vec3(0.);
+    float fade=1.0;
     for( float s=smin; s<=smax; s+=step){
         p+=dir;
         float a=kaliset(p);
-        v+=color(s)*a;
+        v+=vec3(s,s*s,s*s*s*s)*a*fade;
+        fade*=0.73;
 	}
 	fragColor = vec4(v*.0001,1.);	
 }
