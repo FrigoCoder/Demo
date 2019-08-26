@@ -31,16 +31,16 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
     vec3 cam=vec3(0.,0.,-1.0);
     cam+=vec3(4,2,0)*(iTime/60.0-0.5);
     
-	//get coords and direction
+	// get coords and direction
 	vec2 uv=fragCoord.xy/iResolution.xy-.5;
 	uv.y*=iResolution.y/iResolution.x;
-	vec3 dir=vec3(uv,1.0);
+	vec3 dir=vec3(uv,1.0)*step;
 
-
-	//volumetric rendering
-	vec3 v=vec3(0.);
+	// volumetric rendering
+    vec3 p=cam;
+    vec3 v=vec3(0.);
     for( float s=smin; s<=smax; s+=step){
-		vec3 p=cam+s*dir;
+        p+=dir;
         float a=kaliset(p);
         v+=color(s)*a;
 	}
