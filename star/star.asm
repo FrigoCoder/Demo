@@ -100,8 +100,8 @@ main:
             ; put pixel
             fld st0
             fimul int16 [_1800]
-            fistp int32 [r]
-            mov eax, [r]
+            fistp int32 [b]
+            mov eax, [b]
             add al, 128
             stosb
 
@@ -114,8 +114,9 @@ main:
 
             fld st2
             fimul int16 [_1800]
-            fistp int32 [b]
-            mov eax, [b]
+            fimul int16 [_1800]
+            fistp int32 [r]
+            mov eax, [r]
             add al, 128
             stosb
             stosb
