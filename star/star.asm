@@ -1,5 +1,20 @@
 org 100h 
 
+%define int16 word
+%define int32 dword
+%define float dword
+%define double qword
+
+%define def_int16 dw
+%define def_int32 dd
+%define def_float dd
+%define def_double dq
+
+%define res_int16 resw
+%define res_int32 resd
+%define res_float resd
+%define res_double resq
+
 WIDTH EQU 640
 HEIGHT EQU 480
 
@@ -28,30 +43,11 @@ main:
     ; init pixel
     xor di, di
 
-    ; get uv coordinates and direction for z
-    fld qword [_0_1]            ;   0.1
-    fstp qword [d.z]            ;   -
-
-    mov word [y], HEIGHT
+    mov int16 [y], HEIGHT
     loopy:
 
-        ; get uv coordinates and direction for y
-        fild word [y]           ;   y
-        fidiv word [height]     ;   y/H
-        fsub qword [_0_5]       ;   y/H-0.5
-        fdiv qword [ratio]      ;   (y/H-0.5)*H/W
-        fmul qword [_0_1]       ;   (y/H-0.5)*H/W*0.1
-        fstp qword [d.y]        ;   -
-
-        mov word [x], WIDTH
+        mov int16 [x], WIDTH
         loopx:
-
-            ; get uv coordinates and direction for x
-            fild word [x]       ;   x
-            fidiv word [width]  ;   x/W
-            fsub qword [_0_5]   ;   x/W-0.5
-            fmul qword [_0_1]   ;   (y/H-0.5)*0.1
-            fstp qword [d.x]    ;   -
 
             ; switch screenbank if needed
             test di, di
@@ -65,124 +61,78 @@ main:
             ; volumetric rendering
 
             ; calculate camera based on time
-            ; cam.z stays -1.0
-            ; cam.y goes [-1;1] based on seconds [0;60] or time [0;3600] assuming 60Hz
-            ; cam.x goes [-2;2] based on seconds [0;60] or time [0;3600] assuming 60Hz
-            fild word [t]               ;   t
-            fidiv word [_1800]          ;   t/1800
+            ; p.z stays -1.0
+            ; p.y goes [-1;1] based on seconds [0;60] or time [0;3600] assuming 60Hz
+            ; p.x goes [-2;2] based on seconds [0;60] or time [0;3600] assuming 60Hz
+            fild int16 [t]              ;   t
+            fidiv int16 [_1800]         ;   t/1800
             fldz                        ;   0           t/1800
             fld1                        ;   1           0           t/1800
             fsub                        ;   -1          t/1800
-            fst qword [p.z]             ;   -1          t/1800
+            fst double [p.z]            ;   -1          t/1800
             fadd                        ;   t/1800-1
-            fst qword [p.y]             ;   t/1800-1
+            fst double [p.y]            ;   t/1800-1
             fadd st0                    ;   t/900-2
-            fstp qword [p.x]            ;   -
+            fstp double [p.x]           ;   -
 
-            ; initialize v
-            fldz                        ;   0
-            fst qword [v.x]             ;   0
-            fst qword [v.y]             ;   0
-            fstp qword [v.z]            ;   -
-
-            ; init s
-            xor bx, bx
             loops:
 
-                ; p = cam+dir*s
-                fld qword [p.x]     ;   p.x
-                fadd qword [d.x]    ;   p.x+d.x
-                fstp qword [p.x]    ;   -
+            ; p.x += (x/W-0.5)*0.1
+            fld double [p.x]
+            fild int16 [x]
+            fidiv int16 [width]
+            fsub double [_0_5]
+            fmul double [_0_1]
+            faddp st1, st0
+            fstp double [p.x]
 
-                fld qword [p.y]     ;   p.y
-                fadd qword [d.y]    ;   p.y+d.y
-                fstp qword [p.y]    ;   -
+            ; p.y += (y/H-0.5)*H/W*0.1
+            fld double [p.y]
+            fild int16 [y]
+            fidiv int16 [height]
+            fsub double [_0_5]
+            fimul int16 [height]
+            fidiv int16 [width]
+            fmul double [_0_1]
+            faddp st1, st0
+            fstp double [p.y]
 
-                fld qword [p.z]     ;   p.z
-                fadd qword [d.z]    ;   p.z+d.z
-                fstp qword [p.z]    ;   -
+            ; p.z += 0.1
+            fld double [p.z]
+            fadd double [_0_1]
+            fstp double [p.z]
 
-                ; kaliset(p)
-                fldz                ;   0
-                fstp qword [a]      ;   -
-
-                call dotpp          ;   dot(p)
-
-                mov cx, ITERATIONS
-                kaliteration:
-
-                    fld qword [p.x]             ;   p.x                 dot(p)
-                    fabs                        ;   |p.x|               dot(p)
-                    fdiv st0, st1               ;   |p.x|/dot(p)        dot(p)
-                    fsub qword [formuparam]     ;   [p.x|/dot(p)-u      dot(p)
-                    fstp qword [p.x]            ;   dot(p)
-
-                    fld qword [p.y]             ;   p.y                 dot(p)
-                    fabs                        ;   |p.y|               dot(p)
-                    fdiv st0, st1               ;   |p.y|/dot(p)        dot(p)
-                    fsub qword [formuparam]     ;   [p.y|/dot(p)-u      dot(p)
-                    fstp qword [p.y]            ;   dot(p)
-
-                    fld qword [p.z]             ;   p.y                 dot(p)
-                    fabs                        ;   |p.y|               dot(p)
-                    fdiv st0, st1               ;   |p.y|/dot(p)        dot(p)
-                    fsub qword [formuparam]     ;   [p.y|/dot(p)-u      dot(p)
-                    fstp qword [p.z]            ;   dot(p)
-
-                    call dotpp                  ;   dot(p')             dot(p)
-                    fsub st1, st0               ;   dot(p')             dot(p)-dot(p')
-                    fxch st0, st1               ;   dot(p)-dot(p')      dot(p')
-                    fabs                        ;   |dot(p)-dot(p')|    dot(p')
-                    fadd qword [a]              ;   a+|dot(p)-dot(p')|  dot(p')
-                    fstp qword [a]              ;   dot(p')
-
-                    dec cx
-                    jnz kaliteration
-
-                fstp st0
-
-                fld qword [v.x]                 ;   v.x
-                fadd qword [a]                  ;   v.x+a
-                fst qword [v.x]                 ;   v.x+a
-                fistp dword [r]                 ;   -
-
-                fld qword [v.y]                 ;   v.y
-                fadd qword [a]                  ;   v.y+a
-                fstp qword [v.y]                ;   v.z+a
-                fistp dword [g]                 ;   -
-
-                fld qword [v.z]                 ;   v.z
-                fadd qword [a]                  ;   v.z+a
-                fstp qword [v.z]                ;   v.z+a
-                fistp dword [b]                 ;   -
-
-                inc bx
-                cmp bx, 40
-                jb loops
-
-            ;   put pixel
-            
+            ; put pixel
+            fld double [p.x]
+            fimul int16 [_1800]
+            fistp int32 [r]
             mov eax, [r]
-            shr eax, 16
+            add al, 128
             stosb
 
+            fld double [p.y]
+            fimul int16 [_1800]
+            fistp int32 [g]
             mov eax, [g]
-            shr eax, 16
+            add al, 128
             stosb
 
+            fld double [p.z]
+            fimul int16 [_1800]
+            fistp int32 [b]
             mov eax, [b]
-            shr eax, 16
+            add al, 128
             stosb
             stosb
 
-            dec word [x]
+            dec int16 [x]
             jnz loopx
 
-        dec word [y]
+        dec int16 [y]
         jnz loopy
 
     ; increase time
-    inc word [t]
+    inc int16 [t]
 
     ; check keyboard
     in al, 0x60
@@ -196,49 +146,38 @@ int 0x10
 ; exit
 ret
 
-dotpp:
-    fld qword [p.x]     ;   x
-    fmul st0, st0       ;   x*x
-    fld qword [p.y]     ;   y           x*x
-    fmul st0, st0       ;   y*y         x*x
-    fld qword [p.z]     ;   z           y*y     x*x
-    fmul st0, st0       ;   z*z         y*y     x*x
-    fadd                ;   y*y+z*z     x*x
-    fadd                ;   x*x+y*y+z*z
-    ret
-
 section .data 
 
-width dw WIDTH
-height dw HEIGHT
-ratio dq 1.3333333333333333333333333333333
-formuparam dq 0.53
+width def_int16 WIDTH
+height def_int16 HEIGHT
+ratio def_double 1.3333333333333333333333333333333
+formuparam def_double 0.53
 
-_0_1  dq 0.1
-_0_5  dq 0.5
-_4    dq 4.0
-_1800 dw 1800
+_0_1  def_double 0.1
+_0_5  def_double 0.5
+_4    def_double 4.0
+_1800 def_int16 1800
 
 section .bss 
 
-t resw 1
-x resw 1
-y resw 1
+t res_int16 1
+x res_int16 1
+y res_int16 1
 
-d.x resq 1
-d.y resq 1
-d.z resq 1
+d.x res_double 1
+d.y res_double 1
+d.z res_double 1
 
-p.x resq 1
-p.y resq 1
-p.z resq 1
+p.x res_double 1
+p.y res_double 1
+p.z res_double 1
 
-v.x resq 1
-v.y resq 1
-v.z resq 1
+v.x res_double 1
+v.y res_double 1
+v.z res_double 1
 
-a resq 1
+a res_double 1
 
-r resd 1
-g resd 1
-b resd 1
+r res_int32 1
+g res_int32 1
+b res_int32 1
