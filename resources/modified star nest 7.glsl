@@ -12,7 +12,8 @@ float kaliset(vec3 p){
 void mainImage( out vec4 fragColor, in vec2 fragCoord )
 {
     // camera
-    vec3 cam=vec3(0,0,-1)+vec3(4,2,0)*(iTime/60.0-0.5);
+    float t=iTime/60.0-0.5;
+    vec3 cam=vec3(4.0*t,2.0*t,-1);
     
 	// direction
 	vec3 dir=vec3(fragCoord.x/iResolution.x-0.5,
