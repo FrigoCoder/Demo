@@ -1,4 +1,4 @@
-org 100h 
+org 100h
 
 %define int16 word
 %define int32 dword
