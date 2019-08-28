@@ -73,6 +73,7 @@ main:
             fld st0                     ;   t/1800-1    t/1800-1    -1
             fadd st0, st0               ;   t/900-2     t/1800-1    -1
 
+            mov bx, 40
             loops:
 
                 ; p.x += (x/W-0.5)*0.1
@@ -96,6 +97,10 @@ main:
                 faddp st3, st0          ;   p.x'                p.y'    p.z'
 
                 ; kaliset
+
+                dec bx
+                jnz loops
+
 
             ; put pixel
             fld st0
