@@ -58,43 +58,44 @@ main:
             inc dx
             skip_bank_switch:
 
-            ; volumetric rendering
+            ; calculate p
+            fild int16 [t]              ;   t
+            fmul float [_0_02]          ;   0.02t
 
-            ; calculate camera based on time
-            ; p.x goes [-2;2] based on seconds [0;60] or time [0;3600] assuming 60Hz
-            ; p.y goes [-1;1] based on seconds [0;60] or time [0;3600] assuming 60Hz
-            ; p.z stays -1.0
-            fldz                        ;   0
-            fld1                        ;   1           0
-            fsub                        ;   -1
-            fild int16 [t]              ;   t           -1
-            fidiv int16 [_1800]         ;   t/1800      -1
-            fadd st0, st1               ;   t/1800-1    -1
-            fld st0                     ;   t/1800-1    t/1800-1    -1
-            fadd st0, st0               ;   t/900-2     t/1800-1    -1
+            fild int16 [y]              ;   y                   0.02t
+            fidiv int16 [height]        ;   y/H                 0.02t
+            fsub float [_0_5]           ;   y/H-0.5             0.02t
+            fimul int16 [height]        ;   (y/H-0.5)*H         0.02t
+            fidiv int16 [width]         ;   (y/H-0.5)*H/W       0.02t
+            fmul float [_0_02]          ;   0.02(y/H-0.5)*H/W   0.02t
+
+            fild int16 [x]              ;   x                   0.02(y/H-0.5)*H/W   0.02t
+            fidiv int16 [width]         ;   x/W                 0.02(y/H-0.5)*H/W   0.02t
+            fsub float [_0_5]           ;   x/W-0.5             0.02(y/H-0.5)*H/W   0.02t
+            fmul float [_0_02]          ;   0.02(x/W-0.5)       0.02(y/H-0.5)*H/W   0.02t
+
+            ; kaliset
+            fldz                        ;   0   p.x p.y p.z
+            fst float [c.x]             ;   0   p.x p.y p.z
+            fst float [c.y]             ;   0   p.x p.y p.z
+            fstp float [c.z]            ;   p.x p.y p.z
+
+            mov cx, 20
+            kaliset:
+
+                ; calculate dot(p, p)
+                fld st0                 ;   p.x p.x p.y p.z
+
+
+
+                ; end of kaliset loop
+                loop kaliset
+
+
+
 
             mov bx, 40
             loops:
-
-                ; p.x += (x/W-0.5)*0.1
-                fild int16 [x]          ;   x                   p.x     p.y     p.z
-                fidiv int16 [width]     ;   x/W                 p.x     p.y     p.z
-                fsub float [_0_5]       ;   x/W-0.5             p.x     p.y     p.z
-                fmul float [_0_1]       ;   (x/W-0.5)*0.1       p.x     p.y     p.z
-                faddp st1, st0          ;   p.x'                p.y     p.z
-
-                ; p.y += (y/H-0.5)*H/W*0.1
-                fild int16 [y]          ;   y                   p.x'    p.y     p.z
-                fidiv int16 [height]    ;   y/H                 p.x'    p.y     p.z
-                fsub float [_0_5]       ;   y/H-0.5             p.x'    p.y     p.z
-                fimul int16 [height]    ;   (y/H-0.5)*H         p.x'    p.y     p.z
-                fidiv int16 [width]     ;   (y/H-0.5)*H/W       p.x'    p.y     p.z
-                fmul float [_0_1]       ;   (y/H-0.5)*H/W*0.1   p.x'    p.y     p.z
-                faddp st2, st0          ;   p.x'                p.y'    p.z
-
-                ; p.z += 0.1
-                fld float [_0_1]        ;   0.1                 p.x'    p.y'    pz
-                faddp st3, st0          ;   p.x'                p.y'    p.z'
 
                 ; kaliset
 
@@ -103,26 +104,20 @@ main:
 
 
             ; put pixel
-            fld st0
-            fimul int16 [_1800]
+
+            fld float [c.z]
             fistp int32 [b]
             mov eax, [b]
-            add al, 128
             stosb
 
-            fld st1
-            fimul int16 [_1800]
+            fld float [c.y]
             fistp int32 [g]
             mov eax, [g]
-            add al, 128
             stosb
 
-            fld st2
-            fimul int16 [_1800]
-            fimul int16 [_1800]
+            fld float [c.x]
             fistp int32 [r]
             mov eax, [r]
-            add al, 128
             stosb
             stosb
 
@@ -158,11 +153,9 @@ section .data
 
 width def_int16 WIDTH
 height def_int16 HEIGHT
-formuparam def_float 0.53
 
-_0_1  def_float 0.1
+_0_02 def_float 0.02
 _0_5  def_float 0.5
-_1800 def_int16 1800
 
 section .bss 
 
@@ -170,7 +163,9 @@ t res_int16 1
 x res_int16 1
 y res_int16 1
 
-a res_float 1
+c.x res_float 1
+c.y res_float 1
+c.z res_float 1
 
 r res_int32 1
 g res_int32 1
