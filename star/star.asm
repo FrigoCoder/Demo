@@ -18,7 +18,7 @@ org 100h
 WIDTH EQU 640
 HEIGHT EQU 480
 
-ITERATIONS EQU 15
+ITERATIONS EQU 20
 
 section .text 
 
@@ -74,7 +74,7 @@ main:
 
             ; p*=t
             fild int16 [frames]         ;   frames          p.x             p.y             p.z
-;            fidiv int16 [_60]           ;   t               p.x             p.y             p.z
+            fidiv int16 [_60]           ;   t               p.x             p.y             p.z
             fmul st1, st0               ;   t               p.x*t           p.y             p.z
             fmul st2, st0               ;   t               p.x*t           p.y*t           p.z
             fmulp st3, st0              ;   p.x*t           p.y*t           p.z*t
