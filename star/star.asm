@@ -74,7 +74,7 @@ main:
 
             ; p*=t
             fild int16 [frames]         ;   frames          p.x             p.y             p.z
-            fidiv int16 [_60]           ;   t               p.x             p.y             p.z
+;            fidiv int16 [_60]           ;   t               p.x             p.y             p.z
             fmul st1, st0               ;   t               p.x*t           p.y             p.z
             fmul st2, st0               ;   t               p.x*t           p.y*t           p.z
             fmulp st3, st0              ;   p.x*t           p.y*t           p.z*t
@@ -91,7 +91,7 @@ main:
             fst float [c.y]             ;   0   p.x p.y p.z
             fstp float [c.z]            ;   p.x p.y p.z
 
-            mov cx, 20
+            mov cx, [iterations]
             kaliset:
 
                 ; p=abs(p)
@@ -138,51 +138,41 @@ main:
                 ; end of kaliset loop
                 loop kaliset
 
-            fld float [c.z]
-            fistp int32 [b]
-            mov eax, [b]
-            cmp eax, 0
-            jg b_above_0
-            xor al, al
-            b_above_0:
-            cmp eax, 256
-            jg b_below_256
-            mov al, 255
-            b_below_256:
-            stosb
+            ; unload p
+            fstp st0
+            fstp st0
+            fstp st0
 
-            fld float [c.y]
-            fistp int32 [g]
-            mov eax, [g]
-            cmp eax, 0
-            jg g_above_0
-            xor al, al
-            g_above_0:
-            cmp eax, 256
-            jg g_below_256
-            mov al, 255
-            g_below_256:
-            stosb
-
+            ; c /= iterations
             fld float [c.x]
+            fld float [c.y]
+            fld float [c.z]
+            fild int16 [iterations]
+            fdiv st1, st0
+            fdiv st2, st0
+            fdivp st3, st0
+
+            ; draw pixel
             fistp int32 [r]
-            mov eax, [r]
+            fistp int32 [g]
+            fistp int32 [b]
+
+            mov cx, 3
+            mov si, r
+            looppixel:
+            lodsd
             cmp eax, 0
-            jg r_above_0
+            jg above
             xor al, al
-            r_above_0:
+            above:
             cmp eax, 256
-            jg r_below_256
+            jl below
             mov al, 255
-            r_below_256:
+            below:
             stosb
+            loop looppixel
             stosb
 
-            ; pop remaining values
-            fstp st0
-            fstp st0
-            fstp st0
-            
             ; end of loop x
             dec int16 [x]
             jnz loopx
@@ -210,6 +200,7 @@ section .data
 
 width def_int16 WIDTH
 height def_int16 HEIGHT
+iterations def_int16 20
 
 _0_02 def_float 0.02
 _0_5  def_float 0.5

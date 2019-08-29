@@ -7,24 +7,12 @@ double abs(double x)
     return x >= 0.0 ? x : -x;
 }
 
-double sqrt(double x)
-{
-    double result;
-    asm volatile(
-        ".intel_syntax\n"
-        "fsqrt\n"
-        : "=t"(result)
-        : "0"(x)
-        :);
-    return result;
-}
-
-int max(int x, int y)
+double max(double x, double y)
 {
     return x > y ? x : y;
 }
 
-int min(int x, int y)
+double min(double x, double y)
 {
     return x < y ? x : y;
 }
@@ -112,90 +100,56 @@ typedef struct
     double z;
 } vec3;
 
-// Star Nest code
-
-#define iterations 15
-#define formuparam 0.53
-
-#define smin 0.1
-#define smax 4.0
-#define step 0.1
-
-#define distfading 0.730
-
-double length(vec3 v)
-{
-    return sqrt(v.x * v.x + v.y * v.y + v.z * v.z);
-}
-
-char clamp(double x)
-{
-    int i = x * 255.0 + 0.5;
-    return min(max(x, 0), 255);
-}
-
 void dosmain()
 {
     screen = (char *)0xa0000 - getds() * 16;
     setVesaMode();
     for (int t = 0; !escpressed(); t++)
     {
-        // calculate camera
-        vec3 cam;
-        cam.x = 0 + 4 * (t / 60.0 - 0.5);
-        cam.y = 0 + 2 * (t / 60.0 - 0.5);
-        cam.z = -1.0;
-
         for (int y = 0; y < HEIGHT; y++)
         {
             for (int x = 0; x < WIDTH; x++)
             {
-                // calculate direction
-                vec3 dir;
-                dir.x = ((double)x) / WIDTH - 0.5;
-                dir.y = (((double)y) / HEIGHT - 0.5) * HEIGHT / WIDTH;
-                dir.z = 1.0;
+                // p=(u, v, 0.02)
+                vec3 p;
+                p.x = ((double)x) / WIDTH - 0.5;
+                p.y = (((double)y) / HEIGHT - 0.5) * HEIGHT / WIDTH;
+                p.z = 0.02;
 
-                // volumetric rendering
-                vec3 v;
-                v.x = 0;
-                v.y = 0;
-                v.z = 0;
-                double fade = 1.0;
-                for (double s = smin; s <= smax; s += step)
+                // p*=time in seconds
+                p.x *= t / 60.0;
+                p.y *= t / 60.0;
+                p.z *= t / 60.0;
+
+                // formula parameter
+                float u = 0.02 * t / 60.0;
+
+                // kaliset
+                vec3 c;
+                c.x = 0.0;
+                c.y = 0.0;
+                c.z = 0.0;
+
+                for (int i = 0; i < 20; i++)
                 {
-                    // get point
-                    vec3 p;
-                    p.x = cam.x + dir.x * s;
-                    p.y = cam.y + dir.y * s;
-                    p.z = cam.z + dir.z * s;
-
-                    // kaliset
-                    double len = length(p);
-                    double a = len;
-                    for (int i = 0; i < iterations; i++)
-                    {
-                        double dot = len * len;
-                        p.x = abs(p.x) / dot - formuparam;
-                        p.y = abs(p.y) / dot - formuparam;
-                        p.z = abs(p.z) / dot - formuparam;
-                        double newlen = length(p);
-                        //                        a += abs(newlen - len);
-                        a += newlen * newlen;
-                        len = newlen;
-                    }
-                    a *= a * a;
-
-                    // coloring
-                    v.x += s * a * fade;
-                    v.y += s * s * a * fade;
-                    v.z += s * s * s * s * a * fade;
-                    fade *= distfading;
+                    float dot = p.x * p.x + p.y * p.y + p.z * p.z;
+                    p.x = abs(p.x) / dot - u;
+                    p.y = abs(p.y) / dot - u;
+                    p.z = abs(p.z) / dot - u;
+                    c.x += p.x;
+                    c.y += p.y;
+                    c.z += p.z;
                 }
 
-                double scale = 0.001;
-                setPixel(x, y, clamp(v.x * scale), clamp(v.y * scale), clamp(v.z * scale));
-                // setPixel(x, y, x + t, y + t, x + y + t);
+                c.x /= 20.0;
+                c.y /= 20.0;
+                c.z /= 20.0;
+
+                c.x = min(max(c.x, 0.0), 1.0);
+                c.y = min(max(c.y, 0.0), 1.0);
+                c.z = min(max(c.z, 0.0), 1.0);
+
+                setPixel(x, y, c.z * 255, c.y * 255, c.x * 255);
             }
         }
     }
