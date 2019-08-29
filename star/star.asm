@@ -23,7 +23,7 @@ ITERATIONS EQU 15
 section .text 
 
 ; init time to 0
-mov [t], ax
+mov [frames], ax
 
 ; switch to vesa
 mov ax, 0x4f02
@@ -58,23 +58,34 @@ main:
             inc dx
             skip_bank_switch:
 
-            ; calculate p
-            fild int16 [t]              ;   t
-            fmul float [_0_02]          ;   0.02t
+            ; p=(x/W-0.5, (y/H-0.5)*H/W, 0.02)
+            fld float [_0_02]           ;   0.02
+            fild int16 [y]              ;   y               0.02
+            fild int16 [x]              ;   x               y               0.02
+            fild int16 [width]          ;   W               x               y               0.02
+            fdiv st1, st0               ;   W               x/W             y               0.02
+            fild int16 [height]         ;   H               W               x/W             y               0.02
+            fdiv st3, st0               ;   H               W               x/W             y/H             0.02
+            fld float [_0_5]            ;   0.5             H               W               x/W             y/H             0.02
+            fsub st3, st0               ;   0.5             H               W               x/W-0.5         y/H             0.02
+            fsubp st4, st0              ;   H               W               x/W-0.5         y/H-0.5         0.02
+            fmulp st3, st0              ;   W               x/W-0.5         (y/H-0.5)*H     0.02
+            fdivp st2, st0              ;   x/W-0.5         (y/H-0.5)*H/W   0.02
 
-            fild int16 [y]              ;   y                   0.02t
-            fidiv int16 [height]        ;   y/H                 0.02t
-            fsub float [_0_5]           ;   y/H-0.5             0.02t
-            fimul int16 [height]        ;   (y/H-0.5)*H         0.02t
-            fidiv int16 [width]         ;   (y/H-0.5)*H/W       0.02t
-            fmul float [_0_02]          ;   0.02(y/H-0.5)*H/W   0.02t
+            ; p*=t
+            fild int16 [frames]         ;   frames          p.x             p.y             p.z
+            fidiv int16 [_60]           ;   t               p.x             p.y             p.z
+            fmul st1, st0               ;   t               p.x*t           p.y             p.z
+            fmul st2, st0               ;   t               p.x*t           p.y*t           p.z
+            fmulp st3, st0              ;   p.x*t           p.y*t           p.z*t
 
-            fild int16 [x]              ;   x                   0.02(y/H-0.5)*H/W   0.02t
-            fidiv int16 [width]         ;   x/W                 0.02(y/H-0.5)*H/W   0.02t
-            fsub float [_0_5]           ;   x/W-0.5             0.02(y/H-0.5)*H/W   0.02t
-            fmul float [_0_02]          ;   0.02(x/W-0.5)       0.02(y/H-0.5)*H/W   0.02t
+            ; u=0.02t
+            fld st2                     ;   0.02t           p.x             p.y             p.z
+            fstp float [u]              ;   p.x             p.y             p.z
 
             ; kaliset
+
+            ; c=vec3(0,0,0)
             fldz                        ;   0   p.x p.y p.z
             fst float [c.x]             ;   0   p.x p.y p.z
             fst float [c.y]             ;   0   p.x p.y p.z
@@ -83,41 +94,87 @@ main:
             mov cx, 20
             kaliset:
 
-                ; calculate dot(p, p)
-                fld st0                 ;   p.x p.x p.y p.z
+                ; p=abs(p)
+                fabs                    ;   |p.x|   p.y     p.z
+                fxch st1                ;   p.y     |p.x|   p.z
+                fabs                    ;   |p.y|   |p.x|   p.z
+                fxch st1                ;   |p.x|   |p.y|   p.z
+                fxch st2                ;   p.z     |p.y|   |p.x|
+                fabs                    ;   |p.z|   |p.y|   |p.x|
+                fxch st2                ;   |p.x|   |p.y|   |p.z|
 
+                ; dot=dot(p, p)
+                fld st2                 ;   p.z                         p.x         p.y         p.z
+                fmul st0                ;   p.z*p.z                     p.x         p.y         p.z
+                fld st2                 ;   p.y                         p.z*p.z     p.x         p.y p.z
+                fmul st0                ;   p.y*p.y                     p.z*p.z     p.x         p.y p.z
+                fld st2                 ;   p.x                         p.y*p.y     p.z*p.z     p.x p.y p.z
+                fmul st0                ;   p.x*p.x                     p.y*p.y     p.z*p.z     p.x p.y p.z
+                faddp st1, st0          ;   p.x*p.x+p.y*p.y             p.z*p.z     p.x         p.y p.z
+                faddp st1, st0          ;   p.x*p.x+p.y*p.y+p.z*p.z     p.x         p.y         p.z
 
+                ; abs(p)/dot(p,p)
+                fdiv st1, st0           ;   dot                         p.x/dot     p.y         p.z
+                fdiv st2, st0           ;   dot                         p.x/dot     p.y/dot     p.z
+                fdivp st3, st0          ;   p.x/dot                     p.y/dot     p.z/dot
+
+                ; p=abs(p)/dot(p,p)-u
+                fld float [u]           ;   u                           p.x/dot     p.y/dot     p.z/dot
+                fsub st1, st0           ;   u                           p.x/dot-u   p.y/dot     p.z/dot
+                fsub st2, st0           ;   u                           p.x/dot-u   p.y/dot-u   p.z/dot
+                fsubp st3, st0          ;   p.x/dot-u                   p.y/dot-u   p.z/dot-u
+
+                ; c+=p
+                fld float [c.x]         ;   c.x                         p.x         p.y         p.z
+                fadd st0, st1           ;   c.x+p.x                     p.x         p.y         p.z
+                fstp float [c.x]        ;   p.x                         p.y         p.z
+                fld float [c.y]         ;   c.y                         p.x         p.y         p.z
+                fadd st0, st2           ;   c.y+p.y                     p.x         p.y         p.z
+                fstp float [c.y]        ;   p.x                         p.y         p.z
+                fld float [c.z]         ;   c.z                         p.x         p.y         p.z
+                fadd st0, st3           ;   c.z+p.z                     p.x         p.y         p.z
+                fstp float [c.z]        ;   p.z                         p.y         p.z
 
                 ; end of kaliset loop
                 loop kaliset
 
-
-
-
-            mov bx, 40
-            loops:
-
-                ; kaliset
-
-                dec bx
-                jnz loops
-
-
-            ; put pixel
-
             fld float [c.z]
             fistp int32 [b]
             mov eax, [b]
+            cmp eax, 0
+            jg b_above_0
+            xor al, al
+            b_above_0:
+            cmp eax, 256
+            jg b_below_256
+            mov al, 255
+            b_below_256:
             stosb
 
             fld float [c.y]
             fistp int32 [g]
             mov eax, [g]
+            cmp eax, 0
+            jg g_above_0
+            xor al, al
+            g_above_0:
+            cmp eax, 256
+            jg g_below_256
+            mov al, 255
+            g_below_256:
             stosb
 
             fld float [c.x]
             fistp int32 [r]
             mov eax, [r]
+            cmp eax, 0
+            jg r_above_0
+            xor al, al
+            r_above_0:
+            cmp eax, 256
+            jg r_below_256
+            mov al, 255
+            r_below_256:
             stosb
             stosb
 
@@ -135,7 +192,7 @@ main:
         jnz loopy
 
     ; increase time
-    inc int16 [t]
+    inc int16 [frames]
 
     ; check keyboard
     in al, 0x60
@@ -156,12 +213,15 @@ height def_int16 HEIGHT
 
 _0_02 def_float 0.02
 _0_5  def_float 0.5
+_60   def_int16 60
 
 section .bss 
 
-t res_int16 1
+frames res_int16 1
 x res_int16 1
 y res_int16 1
+
+u res_float 1
 
 c.x res_float 1
 c.y res_float 1
