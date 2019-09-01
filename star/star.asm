@@ -17,7 +17,6 @@ org 100h
 
 WIDTH EQU 640
 HEIGHT EQU 480
-
 ITERATIONS EQU 20
 
 section .text 
@@ -91,7 +90,7 @@ main:
             fst float [c.y]             ;   0   p.x p.y p.z
             fstp float [c.z]            ;   p.x p.y p.z
 
-            mov cx, [iterations]
+            mov cx, ITERATIONS
             kaliset:
 
                 ; p=abs(p)
@@ -147,10 +146,10 @@ main:
             fld float [c.x]
             fld float [c.y]
             fld float [c.z]
-            fild int16 [iterations]
-            fdiv st1, st0
-            fdiv st2, st0
-            fdivp st3, st0
+            fld float [_255_per_iterations]
+            fmul st1, st0
+            fmul st2, st0
+            fmulp st3, st0
 
             ; draw pixel
             fistp int32 [r]
@@ -200,7 +199,7 @@ section .data
 
 width def_int16 WIDTH
 height def_int16 HEIGHT
-iterations def_int16 20
+_255_per_iterations def_float 12.75
 
 _0_02 def_float 0.02
 _0_5  def_float 0.5

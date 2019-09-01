@@ -7,12 +7,12 @@ double abs(double x)
     return x >= 0.0 ? x : -x;
 }
 
-double max(double x, double y)
+int max(int x, int y)
 {
     return x > y ? x : y;
 }
 
-double min(double x, double y)
+int min(int x, int y)
 {
     return x < y ? x : y;
 }
@@ -145,11 +145,11 @@ void dosmain()
                 c.y /= 20.0;
                 c.z /= 20.0;
 
-                c.x = min(max(c.x, 0.0), 1.0);
-                c.y = min(max(c.y, 0.0), 1.0);
-                c.z = min(max(c.z, 0.0), 1.0);
+                int r = min(max(c.x * 255.0, 0), 255);
+                int g = min(max(c.y * 255.0, 0), 255);
+                int b = min(max(c.z * 255.0, 0), 255);
 
-                setPixel(x, y, c.z * 255, c.y * 255, c.x * 255);
+                setPixel(x, y, r, g, b);
             }
         }
     }
