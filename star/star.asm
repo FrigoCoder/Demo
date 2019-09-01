@@ -15,8 +15,8 @@ org 100h
 %define res_float resd
 %define res_double resq
 
-WIDTH EQU 640
-HEIGHT EQU 480
+WIDTH EQU 320
+HEIGHT EQU 200
 ITERATIONS EQU 20
 
 section .text 
@@ -26,7 +26,7 @@ mov [frames], ax
 
 ; switch to vesa
 mov ax, 0x4f02
-mov bx, 0x112
+mov bx, 0x10f
 int 10h
 
 ; init screen
