@@ -21,7 +21,7 @@ ITERATIONS EQU 20
 
 section .text 
 
-; init time to 0
+; init time
 mov [frames], ax
 
 ; switch to vesa
@@ -35,6 +35,9 @@ pop es
 
 ; main loop
 main:
+
+    ; increase time
+    inc int16 [frames]
 
     ; init bank
     xor dx, dx
@@ -73,7 +76,7 @@ main:
 
             ; p*=t
             fild int16 [frames]         ;   frames          p.x             p.y             p.z
-            fidiv int16 [_60]           ;   t               p.x             p.y             p.z
+            fidiv int16 [fps]           ;   t               p.x             p.y             p.z
             fmul st1, st0               ;   t               p.x*t           p.y             p.z
             fmul st2, st0               ;   t               p.x*t           p.y*t           p.z
             fmulp st3, st0              ;   p.x*t           p.y*t           p.z*t
@@ -180,9 +183,6 @@ main:
         dec int16 [y]
         jnz loopy
 
-    ; increase time
-    inc int16 [frames]
-
     ; check keyboard
     in al, 0x60
     dec al
@@ -203,7 +203,7 @@ _255_per_iterations def_float 12.75
 
 _0_02 def_float 0.02
 _0_5  def_float 0.5
-_60   def_int16 60
+fps def_int16 15
 
 section .bss 
 
