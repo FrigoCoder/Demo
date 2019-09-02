@@ -89,9 +89,9 @@ main:
 
             ; c=vec3(0,0,0)
             fldz                        ;   0   p.x p.y p.z
-            fst float [c.x]             ;   0   p.x p.y p.z
-            fst float [c.y]             ;   0   p.x p.y p.z
-            fstp float [c.z]            ;   p.x p.y p.z
+            fst float [bp+si]           ;   0   p.x p.y p.z
+            fst float [bp+si+8]         ;   0   p.x p.y p.z
+            fstp float [bp+si+16]       ;   p.x p.y p.z
 
             mov cx, ITERATIONS
             kaliset:
@@ -127,15 +127,15 @@ main:
                 fsubp st3, st0          ;   p.x/dot-u                   p.y/dot-u   p.z/dot-u
 
                 ; c+=p
-                fld float [c.x]         ;   c.x                         p.x         p.y         p.z
+                fld float [bp+si]       ;   c.x                         p.x         p.y         p.z
                 fadd st0, st1           ;   c.x+p.x                     p.x         p.y         p.z
-                fstp float [c.x]        ;   p.x                         p.y         p.z
-                fld float [c.y]         ;   c.y                         p.x         p.y         p.z
+                fstp float [bp+si]      ;   p.x                         p.y         p.z
+                fld float [bp+si+8]     ;   c.y                         p.x         p.y         p.z
                 fadd st0, st2           ;   c.y+p.y                     p.x         p.y         p.z
-                fstp float [c.y]        ;   p.x                         p.y         p.z
-                fld float [c.z]         ;   c.z                         p.x         p.y         p.z
+                fstp float [bp+si+8]    ;   p.x                         p.y         p.z
+                fld float [bp+si+16]    ;   c.z                         p.x         p.y         p.z
                 fadd st0, st3           ;   c.z+p.z                     p.x         p.y         p.z
-                fstp float [c.z]        ;   p.z                         p.y         p.z
+                fstp float [bp+si+16]   ;   p.z                         p.y         p.z
 
                 ; end of kaliset loop
                 loop kaliset
@@ -146,9 +146,9 @@ main:
             fstp st0
 
             ; c /= iterations
-            fld float [c.x]
-            fld float [c.y]
-            fld float [c.z]
+            fld float [bp+si]
+            fld float [bp+si+8]
+            fld float [bp+si+16]
             fld float [_255_per_iterations]
             fmul st1, st0
             fmul st2, st0
@@ -212,10 +212,6 @@ x res_int16 1
 y res_int16 1
 
 u res_float 1
-
-c.x res_float 1
-c.y res_float 1
-c.z res_float 1
 
 r res_int32 1
 g res_int32 1
