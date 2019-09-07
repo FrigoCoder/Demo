@@ -45,16 +45,21 @@ main:
     ; init pixel
     xor di, di
 
-    mov int16 [y], 65536-HEIGHT/2
+    mov bx, 65536-HEIGHT/2
     loopy:
 
-        mov int16 [x], 65536-WIDTH/2
+        mov ax, 65536-WIDTH/2
         loopx:
 
             ; p=(x/W-0.5, (y/H-0.5)*H/W, 0.02)
             fld float [_0_02]           ;   0.02
-            fild int16 [y]              ;   y-H/2           0.02
-            fild int16 [x]              ;   x-W/2           y-H/2           0.02
+
+            mov [bp+si], bx
+            fild int16 [bp+si]          ;   y-H/2           0.02
+
+            mov [bp+si], ax
+            fild int16 [bp+si]          ;   x-W/2           y-H/2           0.02
+
             fild int16 [width]          ;   W               x-W/2           y-H/2           0.02
             fdiv st1, st0               ;   W               (x-W/2)/W       y-H/2           0.02
             fdivp st2, st0              ;   (x-W/2)/W       (y-H/2)/W       0.02
@@ -144,6 +149,10 @@ main:
             fistp int32 [g]
             fistp int32 [b]
 
+            ; preserve coordinates
+            push ax
+            push bx
+
             ; switch screenbank if needed
             test di, di
             jnz skip_bank_switch
@@ -170,14 +179,18 @@ main:
             loop looppixel
             stosb
 
+            ; reserve coordinates
+            pop bx
+            pop ax
+
             ; end of loop x
-            inc int16 [x]
-            cmp int16 [x], WIDTH/2
+            inc ax
+            cmp ax, WIDTH/2
             jl loopx
 
         ; end of loop y
-        inc int16 [y]
-        cmp int16 [y], HEIGHT/2
+        inc bx
+        cmp bx, HEIGHT/2
         jl loopy
 
     ; check keyboard
@@ -192,6 +205,7 @@ int 0x10
 ; exit
 ret
 
+
 section .data 
 
 width def_int16 WIDTH
@@ -200,11 +214,10 @@ _255_per_iterations def_float 12.75
 _0_02 def_float 0.02
 fps def_int16 15
 
+
 section .bss 
 
 frames res_int16 1
-x res_int16 1
-y res_int16 1
 
 u res_float 1
 
