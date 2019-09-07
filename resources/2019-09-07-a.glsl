@@ -1,0 +1,1 @@
+void mainImage(out vec4 col, in vec2 xy){vec3 p=vec3(xy.x/iResolution.x-0.5,(xy.y-iResolution.y/2.0)/iResolution.x,0.02)*iTime;float t=p.z;vec3 c=vec3(0,0,0);for(int i=0; i<20;i++){float len=length(p);p=abs(p)/(len*len)-t;c+=p;}col.xyz=c/20.0;}
