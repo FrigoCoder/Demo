@@ -51,6 +51,10 @@ main:
         mov ax, 65536-WIDTH/2
         loopx:
 
+            ; preserve coordinates
+            push ax
+            push bx
+
             ; p=(x/W-0.5, (y/H-0.5)*H/W, 0.02)
             fld float [_0_02]           ;   0.02
 
@@ -148,10 +152,6 @@ main:
             fistp int32 [r]
             fistp int32 [g]
             fistp int32 [b]
-
-            ; preserve coordinates
-            push ax
-            push bx
 
             ; switch screenbank if needed
             test di, di
