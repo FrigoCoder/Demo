@@ -62,14 +62,11 @@ main:
 
             ; p=(x/W-0.5, (y/H-0.5)*H/W, 0.02)
             fld float [_0_02]           ;   0.02
-            fild int16 [y]              ;   y               0.02
-            fild int16 [x]              ;   x               y               0.02
-            fild int16 [width]          ;   W               x               y               0.02
-            fdiv st1, st0               ;   W               x/W             y               0.02
-            fild int16 [height]         ;   H               W               x/W             y               0.02
-            fdiv st3, st0               ;   H               W               x/W             y/H             0.02
-            fmulp st3, st0              ;   W               x/W-0.5         (y/H-0.5)*H     0.02
-            fdivp st2, st0              ;   x/W-0.5         (y/H-0.5)*H/W   0.02
+            fild int16 [y]              ;   y-H/2           0.02
+            fild int16 [x]              ;   x-W/2           y-H/2           0.02
+            fild int16 [width]          ;   W               x-W/2           y-H/2           0.02
+            fdiv st1, st0               ;   W               (x-W/2)/W       y-H/2           0.02
+            fdivp st2, st0              ;   (x-W/2)/W       (y-H/2)/W       0.02
 
             ; p*=t
             fild int16 [frames]         ;   frames          p.x             p.y             p.z
@@ -197,7 +194,6 @@ ret
 section .data 
 
 width def_int16 WIDTH
-height def_int16 HEIGHT
 _255_per_iterations def_float 12.75
 
 _0_02 def_float 0.02
