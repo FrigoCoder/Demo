@@ -45,10 +45,10 @@ main:
     ; init pixel
     xor di, di
 
-    mov int16 [y], HEIGHT
+    mov int16 [y], 65536-HEIGHT/2
     loopy:
 
-        mov int16 [x], WIDTH
+        mov int16 [x], 65536-WIDTH/2
         loopx:
 
             ; switch screenbank if needed
@@ -68,9 +68,6 @@ main:
             fdiv st1, st0               ;   W               x/W             y               0.02
             fild int16 [height]         ;   H               W               x/W             y               0.02
             fdiv st3, st0               ;   H               W               x/W             y/H             0.02
-            fld float [_0_5]            ;   0.5             H               W               x/W             y/H             0.02
-            fsub st3, st0               ;   0.5             H               W               x/W-0.5         y/H             0.02
-            fsubp st4, st0              ;   H               W               x/W-0.5         y/H-0.5         0.02
             fmulp st3, st0              ;   W               x/W-0.5         (y/H-0.5)*H     0.02
             fdivp st2, st0              ;   x/W-0.5         (y/H-0.5)*H/W   0.02
 
@@ -176,12 +173,14 @@ main:
             stosb
 
             ; end of loop x
-            dec int16 [x]
-            jnz loopx
+            inc int16 [x]
+            cmp int16 [x], WIDTH/2
+            jl loopx
 
         ; end of loop y
-        dec int16 [y]
-        jnz loopy
+        inc int16 [y]
+        cmp int16 [y], HEIGHT/2
+        jl loopy
 
     ; check keyboard
     in al, 0x60
