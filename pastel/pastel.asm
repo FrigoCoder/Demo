@@ -201,7 +201,6 @@ height def_int16 HEIGHT
 _255_per_iterations def_float 12.75
 
 _0_02 def_float 0.02
-_0_5  def_float 0.5
 fps def_int16 15
 
 section .bss 
