@@ -51,15 +51,6 @@ main:
         mov int16 [x], 65536-WIDTH/2
         loopx:
 
-            ; switch screenbank if needed
-            test di, di
-            jnz skip_bank_switch
-            mov ax, 0x4f05
-            xor bx, bx
-            int 10h
-            inc dx
-            skip_bank_switch:
-
             ; p=(x/W-0.5, (y/H-0.5)*H/W, 0.02)
             fld float [_0_02]           ;   0.02
             fild int16 [y]              ;   y-H/2           0.02
@@ -148,11 +139,21 @@ main:
             fmul st2, st0
             fmulp st3, st0
 
-            ; draw pixel
+            ; calculate rgb values
             fistp int32 [r]
             fistp int32 [g]
             fistp int32 [b]
 
+            ; switch screenbank if needed
+            test di, di
+            jnz skip_bank_switch
+            mov ax, 0x4f05
+            xor bx, bx
+            int 10h
+            inc dx
+            skip_bank_switch:
+
+            ; store pixel
             mov cx, 3
             mov si, r
             looppixel:
