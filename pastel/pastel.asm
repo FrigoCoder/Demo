@@ -211,7 +211,6 @@ section .data
 
 width def_int16 WIDTH
 _255_per_iterations def_float 12.75
-
 _0_02 def_float 0.02
 fps def_int16 15
 
@@ -219,5 +218,4 @@ fps def_int16 15
 section .bss
 
 frames res_int16 1
-
 u res_float 1
