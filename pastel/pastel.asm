@@ -45,10 +45,10 @@ main:
     ; init pixel
     xor di, di
 
-    mov bx, 65536-HEIGHT/2
+    mov bx, -(HEIGHT/2)
     loopy:
 
-        mov ax, 65536-WIDTH/2
+        mov ax, -(WIDTH/2)
         loopx:
 
             ; preserve coordinates
