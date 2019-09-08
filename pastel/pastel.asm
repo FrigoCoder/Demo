@@ -85,13 +85,17 @@ main:
             ; kaliset
 
             ; c=vec3(0,0,0)
-            fldz                        ;   0   p.x p.y p.z
-            fst float [si]              ;   0   p.x p.y p.z
-            fst float [si+8]            ;   0   p.x p.y p.z
-            fstp float [si+16]          ;   p.x p.y p.z
+            fldz                        ;   c.z p.x p.y p.z
+            fldz                        ;   c.y c.z p.x p.y p.z
+            fldz                        ;   c.x c.y c.z p.x p.y p.z
 
             mov cx, ITERATIONS
             kaliset:
+
+                ; store c, either from initialization or update, otherwise we run out of stack registers
+                fstp float [si]         ;   c.y c.z p.x p.y p.z
+                fstp float [si+8]       ;   c.z p.x p.y p.z
+                fstp float [si+16]      ;   p.x p.y p.z
 
                 ; p=abs(p)
                 fabs                    ;   |p.x|   p.y     p.z
@@ -124,37 +128,32 @@ main:
                 fsubp st3, st0          ;   p.x/dot-u                   p.y/dot-u   p.z/dot-u
 
                 ; c+=p
-                fld float [si]          ;   c.x                         p.x         p.y         p.z
-                fadd st0, st1           ;   c.x+p.x                     p.x         p.y         p.z
-                fstp float [si]         ;   p.x                         p.y         p.z
-                fld float [si+8]        ;   c.y                         p.x         p.y         p.z
-                fadd st0, st2           ;   c.y+p.y                     p.x         p.y         p.z
-                fstp float [si+8]       ;   p.x                         p.y         p.z
                 fld float [si+16]       ;   c.z                         p.x         p.y         p.z
                 fadd st0, st3           ;   c.z+p.z                     p.x         p.y         p.z
-                fstp float [si+16]      ;   p.z                         p.y         p.z
+                fld float [si+8]        ;   c.y                         c.z+p.z     p.x         p.y         p.z
+                fadd st0, st3           ;   c.y+p.y                     c.z+p.z     p.x         p.y         p.z
+                fld float [si]          ;   c.x                         c.y+p.y     c.z+p.z     p.x         p.y         p.z
+                fadd st0, st3           ;   c.x+p.x                     c.y+p.y     c.z+p.z     p.x         p.y         p.z
 
                 ; end of kaliset loop
                 loop kaliset
 
-            ; unload p
-            fstp st0
-            fstp st0
-            fstp st0
-
             ; c /= iterations
-            fld float [si]
-            fld float [si+8]
-            fld float [si+16]
+            ; c *= 255.0
             fld float [_255_per_iterations]
             fmul st1, st0
             fmul st2, st0
             fmulp st3, st0
 
             ; calculate rgb values
-            fistp int32 [si]
-            fistp int32 [si+4]
             fistp int32 [si+8]
+            fistp int32 [si+4]
+            fistp int32 [si]
+
+            ; unload p
+            fstp st0
+            fstp st0
+            fstp st0
 
             ; switch screenbank if needed
             test di, di
@@ -208,7 +207,7 @@ int 0x10
 ret
 
 
-section .data 
+section .data
 
 width def_int16 WIDTH
 _255_per_iterations def_float 12.75
@@ -217,7 +216,7 @@ _0_02 def_float 0.02
 fps def_int16 15
 
 
-section .bss 
+section .bss
 
 frames res_int16 1
 
