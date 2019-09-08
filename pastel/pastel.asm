@@ -55,14 +55,17 @@ main:
             push ax
             push bx
 
+            ; free real estate
+            mov si, bp
+
             ; p=(x/W-0.5, (y/H-0.5)*H/W, 0.02)
             fld float [_0_02]           ;   0.02
 
-            mov [bp+si], bx
-            fild int16 [bp+si]          ;   y-H/2           0.02
+            mov [si], bx
+            fild int16 [si]             ;   y-H/2           0.02
 
-            mov [bp+si], ax
-            fild int16 [bp+si]          ;   x-W/2           y-H/2           0.02
+            mov [si], ax
+            fild int16 [si]             ;   x-W/2           y-H/2           0.02
 
             fild int16 [width]          ;   W               x-W/2           y-H/2           0.02
             fdiv st1, st0               ;   W               (x-W/2)/W       y-H/2           0.02
@@ -83,9 +86,9 @@ main:
 
             ; c=vec3(0,0,0)
             fldz                        ;   0   p.x p.y p.z
-            fst float [bp+si]           ;   0   p.x p.y p.z
-            fst float [bp+si+8]         ;   0   p.x p.y p.z
-            fstp float [bp+si+16]       ;   p.x p.y p.z
+            fst float [si]              ;   0   p.x p.y p.z
+            fst float [si+8]            ;   0   p.x p.y p.z
+            fstp float [si+16]          ;   p.x p.y p.z
 
             mov cx, ITERATIONS
             kaliset:
@@ -121,15 +124,15 @@ main:
                 fsubp st3, st0          ;   p.x/dot-u                   p.y/dot-u   p.z/dot-u
 
                 ; c+=p
-                fld float [bp+si]       ;   c.x                         p.x         p.y         p.z
+                fld float [si]          ;   c.x                         p.x         p.y         p.z
                 fadd st0, st1           ;   c.x+p.x                     p.x         p.y         p.z
-                fstp float [bp+si]      ;   p.x                         p.y         p.z
-                fld float [bp+si+8]     ;   c.y                         p.x         p.y         p.z
+                fstp float [si]         ;   p.x                         p.y         p.z
+                fld float [si+8]        ;   c.y                         p.x         p.y         p.z
                 fadd st0, st2           ;   c.y+p.y                     p.x         p.y         p.z
-                fstp float [bp+si+8]    ;   p.x                         p.y         p.z
-                fld float [bp+si+16]    ;   c.z                         p.x         p.y         p.z
+                fstp float [si+8]       ;   p.x                         p.y         p.z
+                fld float [si+16]       ;   c.z                         p.x         p.y         p.z
                 fadd st0, st3           ;   c.z+p.z                     p.x         p.y         p.z
-                fstp float [bp+si+16]   ;   p.z                         p.y         p.z
+                fstp float [si+16]      ;   p.z                         p.y         p.z
 
                 ; end of kaliset loop
                 loop kaliset
@@ -140,18 +143,18 @@ main:
             fstp st0
 
             ; c /= iterations
-            fld float [bp+si]
-            fld float [bp+si+8]
-            fld float [bp+si+16]
+            fld float [si]
+            fld float [si+8]
+            fld float [si+16]
             fld float [_255_per_iterations]
             fmul st1, st0
             fmul st2, st0
             fmulp st3, st0
 
             ; calculate rgb values
-            fistp int32 [r]
-            fistp int32 [g]
-            fistp int32 [b]
+            fistp int32 [si]
+            fistp int32 [si+4]
+            fistp int32 [si+8]
 
             ; switch screenbank if needed
             test di, di
@@ -164,7 +167,6 @@ main:
 
             ; store pixel
             mov cx, 3
-            mov si, r
             looppixel:
             lodsd
             cmp eax, 0
@@ -220,7 +222,3 @@ section .bss
 frames res_int16 1
 
 u res_float 1
-
-r res_int32 1
-g res_int32 1
-b res_int32 1
