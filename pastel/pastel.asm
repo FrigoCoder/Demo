@@ -21,9 +21,6 @@ ITERATIONS EQU 20
 
 section .text
 
-; init time
-mov [frames], ax
-
 ; switch to vesa
 mov ax, 0x4f02
 mov bx, 0x10f
@@ -35,9 +32,6 @@ pop es
 
 ; main loop
 main:
-
-    ; increase time
-    inc int16 [frames]
 
     ; init bank
     xor dx, dx
@@ -194,9 +188,8 @@ main:
         cmp bx, HEIGHT/2
         jl loopy
 
-    ; check keyboard
-    in al, 0x60
-    dec al
+    ; decrease time
+    dec int16 [frames]
     jnz main
 
 ; switch to text mode
@@ -212,10 +205,10 @@ section .data
 width def_int16 WIDTH
 _255_per_iterations def_float 12.75
 _0_02 def_float 0.02
+frames def_int16 900
 fps def_int16 15
 
 
 section .bss
 
-frames res_int16 1
 u res_float 1
