@@ -78,10 +78,10 @@ main:
 
             ; kaliset
 
-            ; c=vec3(0,0,0)
-            fldz                        ;   c.z p.x p.y p.z
-            fldz                        ;   c.y c.z p.x p.y p.z
-            fldz                        ;   c.x c.y c.z p.x p.y p.z
+            ; c=p
+            fld st2                     ;   c.z p.x p.y p.z
+            fld st2                     ;   c.y c.z p.x p.y p.z
+            fld st2                     ;   c.x c.y c.z p.x p.y p.z
 
             mov cx, ITERATIONS
             kaliset:
