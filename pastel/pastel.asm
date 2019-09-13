@@ -195,7 +195,7 @@ main:
         jl loopy
 
     ; check keyboard
-    in al, 0x50
+    in al, 0x60
     dec al
     jnz main
 
