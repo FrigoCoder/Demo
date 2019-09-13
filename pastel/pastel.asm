@@ -58,28 +58,28 @@ main:
             ; free real estate
             mov si, bp
 
-            ; p=(x/W-0.5, (y/H-0.5)*H/W, 0.02)
-            fld float [_0_02]           ;   0.02
+            ; p=(x/W-0.5, (y/H-0.5)*H/W, 1/60)
+            fld float [_1_per_60]       ;   1/60
 
             mov [si], bx
-            fild int16 [si]             ;   y-H/2           0.02
+            fild int16 [si]             ;   y-H/2           1/60
 
             mov [si], ax
-            fild int16 [si]             ;   x-W/2           y-H/2           0.02
+            fild int16 [si]             ;   x-W/2           y-H/2           1/60
 
-            fild int16 [width]          ;   W               x-W/2           y-H/2           0.02
-            fdiv st1, st0               ;   W               (x-W/2)/W       y-H/2           0.02
-            fdivp st2, st0              ;   (x-W/2)/W       (y-H/2)/W       0.02
+            fild int16 [width]          ;   W               x-W/2           y-H/2           1/60
+            fdiv st1, st0               ;   W               (x-W/2)/W       y-H/2           1/60
+            fdivp st2, st0              ;   (x-W/2)/W       (y-H/2)/W       1/60
 
-            ; p*=t
+            ; p*=sec
             fild int16 [frames]         ;   frames          p.x             p.y             p.z
-            fidiv int16 [fps]           ;   t               p.x             p.y             p.z
-            fmul st1, st0               ;   t               p.x*t           p.y             p.z
-            fmul st2, st0               ;   t               p.x*t           p.y*t           p.z
-            fmulp st3, st0              ;   p.x*t           p.y*t           p.z*t
+            fidiv int16 [fps]           ;   sec             p.x             p.y             p.z
+            fmul st1, st0               ;   sec             p.x*sec         p.y             p.z
+            fmul st2, st0               ;   sec             p.x*sec         p.y*sec         p.z
+            fmulp st3, st0              ;   p.x*t           p.y*sec         p.z*sec
 
-            ; u=0.02t
-            fld st2                     ;   0.02t           p.x             p.y             p.z
+            ; u=sec/60
+            fld st2                     ;   sec/60          p.x             p.y             p.z
             fstp float [u]              ;   p.x             p.y             p.z
 
             ; kaliset
@@ -106,7 +106,7 @@ main:
                 fabs                    ;   |p.z|   |p.y|   |p.x|
                 fxch st2                ;   |p.x|   |p.y|   |p.z|
 
-                ; dot=dot(p, p)
+                ; dot=dot(p,p)
                 fld st2                 ;   p.z                         p.x         p.y         p.z
                 fmul st0                ;   p.z*p.z                     p.x         p.y         p.z
                 fld st2                 ;   p.y                         p.z*p.z     p.x         p.y p.z
@@ -211,7 +211,7 @@ section .data
 
 width def_int16 WIDTH
 _255_per_iterations def_float 12.75
-_0_02 def_float 0.02
+_1_per_60 def_float 0.01666666666666666666666666666667
 fps def_int16 15
 
 
