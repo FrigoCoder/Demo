@@ -1,3 +1,24 @@
+; #define iterations 20
+
+; vec3 kaliset(vec3 p, vec3 u){
+;     vec3 c=p;
+;     for(int i=0;i<iterations;i++){
+;         float len=length(p);
+;         p=abs(p)/(len*len)-u;
+;         c+=p;
+;     }
+; 	return c/float(iterations);
+; }
+
+; void mainImage(out vec4 c, in vec2 xy)
+; {
+;     vec2 uv=vec2(xy.x/iResolution.x-0.5,(xy.y-iResolution.y*0.5)/iResolution.x);
+;     float m=iTime/60.0;
+;     vec3 p=vec3(uv*iTime,0.1);
+;     vec3 u=vec3(1.0,1.0,0.1)*m;
+;     c.xyz=kaliset(p,u);
+; }
+
 org 100h
 
 %define int16 word
