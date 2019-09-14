@@ -219,17 +219,19 @@ main:
         cmp bx, HEIGHT/2
         jl loopy
 
-    ; check keyboard
-    in al, 0x60
-    dec al
-    jnz main
+    jmp main
 
-; switch to text mode
-mov ax, 0x0003
-int 0x10
+;     ; check keyboard
+;     in al, 0x60
+;     dec al
+;     jnz main
 
-; exit
-ret
+; ; switch to text mode
+; mov ax, 0x0003
+; int 0x10
+
+; ; exit
+; ret
 
 
 section .data
