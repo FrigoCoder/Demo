@@ -226,8 +226,8 @@ main:
     jnz main
 
 ; switch to text mode
-mov ax, 0x0003
-int 0x10
+;mov ax, 0x0003
+;int 0x10
 
 ; exit
 ret
@@ -245,5 +245,3 @@ _255_per_iterations def_float 12.75
 section .bss
 
 frames res_int16 1
-u res_float 1
-v res_float 1
