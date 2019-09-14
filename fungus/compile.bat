@@ -1,2 +1,2 @@
-nasm fungus.asm -o fungus.com
-ndisasm fungus.com -o 100h > disasm.asm
+nasm f320.asm -o f320.com
+nasm f640.asm -o f640.com
